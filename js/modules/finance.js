@@ -59,27 +59,101 @@ function calcKPA() {
 }
 
 function calcFinanceCarValuation() {
-    const p1 = parseFloat(document.getElementById('fcP1').value) || 0;
-    const p2 = parseFloat(document.getElementById('fcP2').value) || 0;
-    const p3 = parseFloat(document.getElementById('fcP3').value) || 0;
-    
-    let count = 0;
-    let sum = 0;
-    
-    if(p1 > 0) { sum += p1; count++; }
-    if(p2 > 0) { sum += p2; count++; }
-    if(p3 > 0) { sum += p3; count++; }
-    
-    if(count === 0) {
-        document.getElementById('fcResult').innerText = "0.00 zł";
-        return;
-    }
-    
-    let avg = sum / count;
-    
-    if(document.getElementById('fcBad').checked) {
-        avg *= 0.8;
-    }
-    
+    const p1 = document.getElementById('fcP1').value;
+    const p2 = document.getElementById('fcP2').value;
+    const p3 = document.getElementById('fcP3').value;
+    const isDamaged = document.getElementById('fcBad').checked;
+
+    const avg = calculateAverageCarValue([p1, p2, p3], isDamaged);
+
     document.getElementById('fcResult').innerText = avg.toFixed(2) + " zł";
 }
+
+// --- LAYOUT CUSTOMIZATION ---
+let financeSortable = null;
+let isFinanceEditMode = false;
+
+function initFinanceModule() {
+    applyFinanceLayout();
+    setupFinanceCollapsiblePanels();
+}
+
+function toggleFinanceEditMode() {
+    isFinanceEditMode = !isFinanceEditMode;
+    const panelsContainer = document.getElementById('finance-panels');
+    const btn = document.getElementById('edit-finance-btn');
+
+    if (isFinanceEditMode) {
+        btn.innerHTML = '<i data-lucide="check" class="inline-block mr-2"></i> Zapisz układ';
+        btn.classList.add('bg-green-500', 'text-white');
+        panelsContainer.classList.add('edit-mode');
+
+        financeSortable = new Sortable(panelsContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            handle: '.collapsible-header',
+            onEnd: function (evt) {
+                const order = Array.from(panelsContainer.children).map(item => item.dataset.panelId);
+                localStorage.setItem('financePanelOrder', JSON.stringify(order));
+            }
+        });
+    } else {
+        btn.innerHTML = '<i data-lucide="move" class="inline-block mr-2"></i> Edytuj układ';
+        btn.classList.remove('bg-green-500', 'text-white');
+        panelsContainer.classList.remove('edit-mode');
+        if (financeSortable) {
+            financeSortable.destroy();
+            financeSortable = null;
+        }
+    }
+    if(window.lucide) lucide.createIcons();
+}
+
+function setupFinanceCollapsiblePanels() {
+    document.querySelectorAll('#finance-panels .collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            if (isFinanceEditMode) return;
+
+            const content = header.nextElementSibling;
+            const panelId = header.closest('.sortable-item').dataset.panelId;
+            const isCollapsed = content.classList.toggle('hidden');
+            header.querySelector('.chevron-icon').classList.toggle('rotate-180', isCollapsed);
+
+            const collapsedState = JSON.parse(localStorage.getItem('financePanelState')) || {};
+            collapsedState[panelId] = isCollapsed;
+            localStorage.setItem('financePanelState', JSON.stringify(collapsedState));
+        });
+    });
+}
+
+function applyFinanceLayout() {
+    const panelsContainer = document.getElementById('finance-panels');
+    if (!panelsContainer) return;
+    
+    // Apply order
+    const savedOrder = JSON.parse(localStorage.getItem('financePanelOrder'));
+    if (savedOrder) {
+        const items = Array.from(panelsContainer.children);
+        const sortedItems = savedOrder.map(id => items.find(item => item.dataset.panelId === id));
+        sortedItems.forEach(item => {
+            if (item) panelsContainer.appendChild(item);
+        });
+    }
+
+    // Apply collapsed state
+    const collapsedState = JSON.parse(localStorage.getItem('financePanelState')) || {};
+    Object.keys(collapsedState).forEach(panelId => {
+        const panel = document.querySelector(`#finance-panels [data-panel-id="${panelId}"]`);
+        if (panel && collapsedState[panelId]) {
+            panel.querySelector('.collapsible-content').classList.add('hidden');
+            panel.querySelector('.chevron-icon').classList.add('rotate-180');
+        }
+    });
+}
+
+// Global Exports for the view
+window.calculateBalance = calculateBalance;
+window.calcKPA = calcKPA;
+window.calcFinanceCarValuation = calcFinanceCarValuation;
+window.toggleFinanceEditMode = toggleFinanceEditMode;
+window.initFinanceModule = initFinanceModule;
