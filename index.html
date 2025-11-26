@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EgzeBiurko v22 (SaaS)</title>
+    
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.1.15/dist/docx-preview.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/idb@7.1.1/build/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="calendar.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 h-screen flex overflow-hidden antialiased relative">
+
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 -z-10 pointer-events-none"></div>
+
+    <aside id="sidebar" class="w-64 glass-sidebar text-slate-400 flex flex-col shadow-2xl z-50 sidebar-transition group relative">
+        
+        <div class="h-20 flex items-center px-6 border-b border-slate-800/50 overflow-hidden flex-shrink-0">
+            <div class="flex items-center gap-4 cursor-pointer w-full" onclick="goHome()">
+                <div class="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg hover:scale-105 transition-transform flex-shrink-0 border border-slate-700 bg-white">
+                    <img src="poborca.jpg" alt="Logo" class="w-full h-full object-cover mix-blend-multiply" onerror="this.style.display='none'">
+                    <div class="absolute inset-0 flex items-center justify-center bg-indigo-600 text-white font-bold" style="z-index:-1">EB</div>
+                </div>
+                <div class="sidebar-text">
+                    <h1 class="text-white font-bold text-lg tracking-tight leading-none">EgzeBiurko</h1>
+                    <p class="text-[10px] text-indigo-400 font-medium uppercase tracking-wider mt-1">v2.0 Pro</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto custom-scroll py-6 px-3 space-y-1.5">
+            <button onclick="toggleSearch()" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item mb-2 border border-dashed border-slate-700 hover:border-slate-500">
+                <i data-lucide="search" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Szukaj...</span>
+            </button>
+
+            <button onclick="goHome()" id="nav-dashboard" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="home" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Pulpit</span>
+            </button>
+
+            <div class="sidebar-text pt-6 pb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-600">Moduły</div>
+            <div class="h-px bg-slate-800/50 mx-3 my-2 lg:hidden"></div>
+
+            <button onclick="goToModule('terrain')" id="nav-terrain" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="map-pin" size="22" class="group-hover/item:text-emerald-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Teren</span>
+            </button>
+
+            <button onclick="goToModule('generator')" id="nav-generator" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="file-text" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Generator Pism</span>
+            </button>
+            
+            <button onclick="goToModule('tracker')" id="nav-tracker" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item relative">
+                <i data-lucide="calendar-clock" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Terminarz</span>
+            </button>
+
+            <button onclick="goToModule('cars')" id="nav-cars" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="car" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Ruchomości</span>
+            </button>
+
+            <button onclick="goToModule('finance')" id="nav-finance" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="calculator" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Kalkulatory</span>
+            </button>
+
+            <button onclick="goToModule('registry')" id="nav-registry" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="gavel" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Rejestr Komorników</span>
+            </button>
+            
+            <button onclick="goToModule('ai')" id="nav-ai" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="brain-circuit" size="22" class="group-hover/item:text-purple-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Asystent AI</span>
+            </button>
+
+            <button onclick="goToModule('links')" id="nav-links" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="link" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Intranet</span>
+            </button>
+
+            <button onclick="goToModule('notes')" id="nav-notes" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                <i data-lucide="sticky-note" size="22" class="group-hover/item:text-yellow-400 transition-colors flex-shrink-0"></i>
+                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Notatnik</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50 space-y-3 bg-transparent">
+             <div class="flex justify-end mb-2">
+                 <button onclick="toggleSidebarMode()" id="sidebarPinBtn" class="text-slate-500 hover:text-white transition-colors" title="Przypnij/Odepnij Pasek">
+                     <i data-lucide="pin" size="16"></i>
+                 </button>
+             </div>
+
+             <div class="flex items-center justify-between bg-white/5 rounded-xl p-1.5 border border-white/5">
+                <button onclick="toggleDarkMode()" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Jasny/Ciemny">
+                    <i data-lucide="moon" size="18" class="mx-auto"></i>
+                </button>
+                <div class="w-px h-5 bg-white/10"></div>
+                <button onclick="goToModule('settings')" id="nav-settings" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Ustawienia">
+                    <i data-lucide="settings" size="18" class="mx-auto"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-hidden relative flex flex-col">
+        
+        <header class="absolute top-0 right-0 left-0 h-16 flex justify-end items-center px-8 z-40 pointer-events-none">
+            <div class="pointer-events-auto flex gap-4">
+                <div class="relative">
+                    <button onclick="toggleFavorites()" class="p-2 bg-white dark:bg-slate-800 rounded-full shadow-md hover:scale-105 transition-transform text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
+                        <i data-lucide="briefcase" size="20"></i>
+                    </button>
+                    
+                    <div id="favPopover" class="hidden absolute right-0 top-12 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade z-50">
+                        <div class="p-3 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-bold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Teczka (Ulubione)</div>
+                        <div id="favList" class="max-h-64 overflow-y-auto custom-scroll p-1"></div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <button onclick="toggleNotifications()" class="p-2 bg-white dark:bg-slate-800 rounded-full shadow-md hover:scale-105 transition-transform text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
+                        <i data-lucide="bell" size="20"></i>
+                    </button>
+                    <div id="notifBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">0</div>
+                    
+                    <div id="notifPopover" class="hidden absolute right-0 top-12 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade z-50">
+                        <div class="p-3 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-bold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Powiadomienia</div>
+                        <div id="notifList" class="max-h-64 overflow-y-auto custom-scroll p-1"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-hidden relative z-0 pt-16">
+            <!-- Main Content Container for Dynamic Views -->
+            <div id="main-view-container" class="h-full p-6 overflow-y-auto custom-scroll">
+                <!-- Content will be injected here via JS -->
+            </div>
+        </div>
+    </main>
+
+    <div id="searchModal" class="hidden fixed inset-0 z-[60] flex items-start justify-center pt-32 backdrop-blur-sm bg-slate-900/20" onclick="if(event.target===this) toggleSearch()">
+        <div class="glass-modal w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade transform transition-all p-0">
+             <div class="flex items-center p-4 border-b border-slate-200/50 dark:border-slate-700/50">
+                 <i data-lucide="search" class="text-slate-400 ml-2" size="24"></i>
+                 <input id="globalSearchInput" class="flex-1 bg-transparent border-none outline-none text-xl px-4 text-slate-700 dark:text-white placeholder-slate-400 font-medium h-10" placeholder="Szukaj wszędzie..." oninput="runGlobalSearch(this.value)" autocomplete="off" autofocus>
+                 <div class="text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded">ESC</div>
+             </div>
+             <div id="searchResults" class="max-h-[60vh] overflow-y-auto custom-scroll p-2 empty:hidden bg-slate-50/50 dark:bg-slate-900/50"></div>
+             <div id="searchFooter" class="p-3 bg-slate-100/50 dark:bg-slate-800/50 text-xs text-slate-400 text-center border-t border-slate-200/50 dark:border-slate-700/50 hidden">
+                 Wpisz frazę aby przeszukać Sprawy, Szablony, Pojazdy i Komorników.
+             </div>
+        </div>
+    </div>
+
+    <div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-96 shadow-2xl animate-fade">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold dark:text-white">Dodaj Przypomnienie</h3>
+                <button onclick="closeReminderModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <p id="reminderDateDisplay" class="text-xs text-indigo-600 font-bold mb-3 uppercase tracking-wider"></p>
+            <input type="hidden" id="reminderDateInput">
+            
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Treść</label>
+            <textarea id="reminderText" rows="3" class="w-full border p-3 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none mb-4" placeholder="Np. Wyślij pismo..."></textarea>
+            
+            <button onclick="saveReminder()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors">Zapisz</button>
+        </div>
+    </div>
+
+    <div id="magicFillModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-2xl h-[500px] flex flex-col">
+             <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-2">
+                <h3 class="font-bold text-indigo-800 dark:text-indigo-400 flex items-center gap-2"><i data-lucide="sparkles"></i> AI Auto-Fill</h3>
+                <button onclick="closeMagicFill()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <textarea id="magicInput" class="flex-1 w-full p-4 border bg-indigo-50 dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm rounded-xl outline-none resize-none" placeholder="Wklej treść e-maila lub notatki służbowej..."></textarea>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="runGeminiMagic()" id="magicBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none">
+                    <i data-lucide="wand2" size="16"></i> Wykonaj Analizę
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addCarModal" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center backdrop-blur-sm overflow-y-auto py-4">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col my-auto relative animate-fade">
+             <div class="flex justify-between items-center mb-6 border-b dark:border-slate-700 pb-4">
+                <h3 class="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="plus-circle"></i> Dodaj Nowy Pojazd</h3>
+                <button onclick="document.getElementById('addCarModal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Marka</label>
+                    <input id="acMake" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Model</label>
+                    <input id="acModel" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Rocznik</label>
+                    <input id="acYear" type="number" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-1">
+                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nr Rejestracyjny</label>
+                     <input id="acPlate" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-1">
+                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nr VIN</label>
+                     <input id="acVin" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-1">
+                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sygnatura (Nr Sprawy)</label>
+                     <input id="acCase" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-2 flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
+                     <input type="checkbox" id="acForfeit" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                     <label for="acForfeit" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Pojazd z przepadku</label>
+                </div>
+                
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Wartość Oszacowania</label>
+                    <div class="relative">
+                        <input id="acValue" type="number" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                        <span class="absolute right-3 top-2.5 text-xs text-slate-400">PLN</span>
+                    </div>
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                    <select id="acStatus" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none"></select>
+                </div>
+                 <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data</label>
+                    <input id="acDate" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                </div>
+                
+                <!-- Calculator Section -->
+                <div class="md:col-span-2 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                    <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-2 flex items-center gap-2">
+                        <i data-lucide="calculator" size="12"></i> Pomocniczy Kalkulator Wyceny
+                    </label>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <input id="acP1" type="number" placeholder="Cena OLX" class="p-2 border rounded-lg text-xs dark:bg-slate-800 dark:text-white" oninput="calcModalValuation()">
+                        <input id="acP2" type="number" placeholder="Cena OtoMoto" class="p-2 border rounded-lg text-xs dark:bg-slate-800 dark:text-white" oninput="calcModalValuation()">
+                        <input id="acP3" type="number" placeholder="Inna" class="p-2 border rounded-lg text-xs dark:bg-slate-800 dark:text-white" oninput="calcModalValuation()">
+                    </div>
+                    <div class="flex items-center gap-2">
+                         <input type="checkbox" id="acBad" class="w-4 h-4 text-indigo-600 rounded" onchange="calcModalValuation()">
+                         <label for="acBad" class="text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">Uszkodzony / Zły stan (-20%)</label>
+                         <div class="ml-auto text-xs text-indigo-400">Średnia wstawiana jest automatycznie</div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Zdjęcia</label>
+                    <input id="acFiles" type="file" multiple class="w-full p-2 border rounded-lg text-xs dark:bg-slate-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
+                <button onclick="document.getElementById('addCarModal').classList.add('hidden')" class="px-4 py-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 text-sm font-bold">Anuluj</button>
+                <button onclick="saveNewCar()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all">Dodaj Pojazd</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="carDetailsModal" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center backdrop-blur-sm overflow-y-auto py-10">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col my-auto relative animate-fade">
+             <div class="flex justify-between items-center mb-6 border-b dark:border-slate-700 pb-4">
+                <h3 class="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="car"></i> Karta Pojazdu</h3>
+                <button onclick="document.getElementById('carDetailsModal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Main Info Left -->
+                <div class="space-y-4 md:col-span-1">
+                     <input type="hidden" id="cdId">
+                     
+                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Dane Podstawowe</div>
+                        <input id="cdMake" class="w-full p-2 border rounded mb-2 text-xs dark:bg-slate-800 dark:text-white" placeholder="Marka">
+                        <input id="cdModel" class="w-full p-2 border rounded mb-2 text-xs dark:bg-slate-800 dark:text-white" placeholder="Model">
+                        <div class="flex gap-2">
+                             <input id="cdYear" type="number" class="w-1/3 p-2 border rounded text-xs dark:bg-slate-800 dark:text-white" placeholder="Rok">
+                             <input id="cdPlate" class="flex-1 p-2 border rounded text-xs dark:bg-slate-800 dark:text-white" placeholder="Rejestracja">
+                        </div>
+                        <input id="cdVin" class="w-full p-2 border rounded mt-2 text-xs dark:bg-slate-800 dark:text-white" placeholder="VIN">
+                        <input id="cdCase" class="w-full p-2 border rounded mt-2 text-xs font-bold text-indigo-600 dark:bg-slate-800 dark:text-white" placeholder="Sygnatura">
+                        
+                        <div class="flex items-center gap-2 mt-3 pt-2 border-t dark:border-slate-700">
+                             <input type="checkbox" id="cdForfeit" class="w-4 h-4 text-red-600 rounded">
+                             <label for="cdForfeit" class="text-xs font-bold text-red-700 dark:text-red-400">Przepadek</label>
+                        </div>
+                     </div>
+
+                     <div>
+                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                         <select id="cdStatus" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none" onchange="updateCarValuation()"></select>
+                     </div>
+                     
+                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                         <div class="flex justify-between items-center mb-1">
+                             <label class="block text-[10px] font-bold text-slate-500 uppercase">Wartość Oszacowania</label>
+                             <button onclick="copyToClipboard('cdValue')" class="text-slate-400 hover:text-indigo-600" title="Kopiuj"><i data-lucide="copy" size="12"></i></button>
+                         </div>
+                         <input id="cdValue" type="number" class="w-full p-2 bg-transparent text-lg font-mono font-bold text-slate-800 dark:text-white outline-none border-b border-dashed border-slate-300 focus:border-indigo-500 mb-2" placeholder="0.00" oninput="updateCarValuation()">
+                         
+                         <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                             <div class="flex justify-between items-center mb-1">
+                                 <span class="text-[10px] font-bold text-indigo-500 uppercase">Cena Wywołania</span>
+                                 <button onclick="copyToClipboard('cdCallPrice')" class="text-slate-400 hover:text-indigo-600" title="Kopiuj"><i data-lucide="copy" size="12"></i></button>
+                             </div>
+                             <input id="cdCallPrice" class="w-full bg-transparent font-mono font-bold text-indigo-600 dark:text-indigo-400 text-lg outline-none border-none p-0" readonly>
+                         </div>
+                     </div>
+                </div>
+
+                <!-- Checklist Right -->
+                <div class="md:col-span-2 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col">
+                    <h4 class="font-bold text-xs text-slate-500 uppercase mb-4 flex items-center gap-2"><i data-lucide="list-checks" size="14"></i> Lista Kontrolna</h4>
+                    
+                    <div class="grid grid-cols-2 gap-8 flex-1">
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider border-b pb-1 dark:border-slate-600">Czynności</div>
+                            <div class="space-y-3" id="checklistA"></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider border-b pb-1 dark:border-slate-600">Przedmioty</div>
+                            <div class="space-y-3" id="checklistB"></div>
+                            
+                            <!-- Inne Field -->
+                            <div class="mt-4 pt-3 border-t dark:border-slate-700">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input type="checkbox" id="chk_other" class="w-4 h-4 text-indigo-600 rounded" onchange="document.getElementById('checklistOtherText').disabled = !this.checked">
+                                    <label for="chk_other" class="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">Inne</label>
+                                </div>
+                                <input id="checklistOtherText" class="w-full p-2 border rounded text-xs dark:bg-slate-800 dark:text-white disabled:opacity-50" placeholder="Wpisz co..." disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
+                <button onclick="document.getElementById('carDetailsModal').classList.add('hidden')" class="px-4 py-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 text-sm font-bold">Anuluj</button>
+                <button onclick="saveCarDetails()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all">Zapisz Zmiany</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/views_bundle.js"></script>
+    <script src="js/loader.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/ui.js"></script>
+
+    <!-- Modules -->
+    <script src="js/modules/tracker.js"></script>
+    <script src="js/modules/cars.js"></script>
+    <script src="js/modules/finance.js"></script>
+    <script src="js/modules/registry.js"></script>
+    <script src="js/modules/notes.js"></script>
+    <script src="js/modules/links.js"></script>
+    <script src="js/modules/generator.js"></script>
+    <script src="js/modules/ai.js"></script>
+    <script src="js/modules/terrain.js"></script>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

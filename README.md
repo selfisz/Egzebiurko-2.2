@@ -1,2 +1,2 @@
-# Egzebiurko-2.2
-Wsparcie pracy egzekutora
+# Egzebiurko-2.0
+Wsparcie pracy egzekutora 
