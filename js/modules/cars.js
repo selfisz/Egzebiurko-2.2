@@ -344,40 +344,12 @@ async function delCar(id) {
 }
 
 function calcModalValuation() {
-    const p1 = parseFloat(document.getElementById('acP1').value) || 0;
-    const p2 = parseFloat(document.getElementById('acP2').value) || 0;
-    const p3 = parseFloat(document.getElementById('acP3').value) || 0;
+    const p1 = document.getElementById('acP1').value;
+    const p2 = document.getElementById('acP2').value;
+    const p3 = document.getElementById('acP3').value;
+    const isDamaged = document.getElementById('acBad').checked;
     
-    let count = 0;
-    let sum = 0;
-    
-    if(p1 > 0) { sum += p1; count++; }
-    if(p2 > 0) { sum += p2; count++; }
-    if(p3 > 0) { sum += p3; count++; }
-    
-    if(count === 0) return;
-    
-    let avg = sum / count;
-    
-    if(document.getElementById('acBad').checked) {
-        avg *= 0.8; // -20%
-    }
+    const avg = calculateAverageCarValue([p1, p2, p3], isDamaged);
     
     document.getElementById('acValue').value = avg.toFixed(2);
-}
-
-// Helper for Copy
-function copyToClipboard(elementId) {
-    const el = document.getElementById(elementId);
-    if(!el || !el.value) return;
-    
-    navigator.clipboard.writeText(el.value).then(() => {
-        const originalBg = el.style.backgroundColor;
-        el.style.backgroundColor = "rgba(99, 102, 241, 0.2)";
-        setTimeout(() => {
-            el.style.backgroundColor = originalBg;
-        }, 200);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
 }

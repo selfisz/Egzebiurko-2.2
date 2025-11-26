@@ -10,7 +10,7 @@ async function loadNotes() {
 
     notes.forEach(n => {
         const div = document.createElement('div');
-        div.className = `p-3 rounded-xl cursor-pointer border transition-all ${state.activeNoteId===n.id ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700'}`;
+        div.className = `note-item p-3 rounded-xl cursor-pointer border transition-all ${state.activeNoteId===n.id ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-slate-800 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700'}`;
         div.innerHTML = `
             <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${n.title || 'Bez tytułu'}</div>
             <div class="text-[10px] text-slate-500 truncate mt-1">${n.content || '...'}</div>
@@ -21,11 +21,20 @@ async function loadNotes() {
     });
 }
 
-function filterNotes(q) {
-    const items = document.getElementById('notesList').children;
-    for(let item of items) {
-        item.style.display = item.innerText.toLowerCase().includes(q.toLowerCase()) ? 'block' : 'none';
-    }
+async function filterNotes(q) {
+    const query = q.toLowerCase();
+    const listItems = document.querySelectorAll('#notesList > div');
+
+    listItems.forEach(item => {
+        const title = item.querySelector('.font-bold').innerText.toLowerCase();
+        const content = item.querySelector('.text-slate-500').innerText.toLowerCase();
+
+        if (title.includes(query) || content.includes(query)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
 }
 
 async function selectNote(id) {
@@ -42,16 +51,25 @@ async function selectNote(id) {
 }
 
 async function newNote() {
-    const id = await state.db.add('notes', { title: '', content: '', date: new Date().toISOString() });
+    const id = await state.db.add('notes', { title: 'Nowa Notatka', content: '', date: new Date().toISOString() });
     selectNote(id);
     document.getElementById('noteTitle').focus();
 }
 
 async function saveNote() {
-    if(!state.activeNoteId) return;
-    const title = document.getElementById('noteTitle').value;
-    const content = document.getElementById('noteContent').value;
-    await state.db.put('notes', { id: state.activeNoteId, title, content, date: new Date().toISOString() });
+    if (!state.activeNoteId) return;
+
+    const note = await state.db.get('notes', state.activeNoteId);
+    if (!note) {
+        console.error("Note to save not found in DB:", state.activeNoteId);
+        return;
+    }
+
+    note.title = document.getElementById('noteTitle').value;
+    note.content = document.getElementById('noteContent').value;
+    note.date = new Date().toISOString();
+
+    await state.db.put('notes', note);
     loadNotes();
 }
 

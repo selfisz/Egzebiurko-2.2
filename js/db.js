@@ -14,6 +14,7 @@ async function initDB() {
             if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id', autoIncrement: true });
             if (!db.objectStoreNames.contains('pdfs')) db.createObjectStore('pdfs', { keyPath: 'name' });
             if (!db.objectStoreNames.contains('reminders')) db.createObjectStore('reminders', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('terrain_cases')) db.createObjectStore('terrain_cases', { keyPath: 'id', autoIncrement: true });
         }
     });
 }

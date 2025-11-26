@@ -1,8 +1,18 @@
+// --- ROUTING ---
+window.addEventListener('hashchange', handleRouteChange);
+
+function handleRouteChange() {
+    const hash = window.location.hash.substring(1);
+    // If hash is empty or just '#', default to 'dashboard'
+    const moduleName = hash || 'dashboard';
+    goToModule(moduleName);
+}
+
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
-    goToModule('dashboard'); // This will load the dashboard view
+    handleRouteChange(); // Initial route handler
     lucide.createIcons();
     
     // Restore Sidebar State
@@ -20,6 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Restore Theme
     setTheme('default');
+
+    applySidebarOrder();
 });
 
 // --- KEYBOARD SHORTCUTS ---
@@ -90,6 +102,51 @@ if (window.pdfjsLib) {
 
 // Make sure global search is attached if not handled by bridge/onclicks (it is handled by onclicks mostly)
 window.runGlobalSearch = runGlobalSearch;
+
+// --- SIDEBAR EDIT MODE ---
+let sidebarSortable = null;
+let isSidebarEditMode = false;
+
+function toggleSidebarEditMode() {
+    isSidebarEditMode = !isSidebarEditMode;
+    const moduleList = document.getElementById('module-list');
+    const btn = document.getElementById('edit-sidebar-btn');
+
+    if (isSidebarEditMode) {
+        btn.innerHTML = '<i data-lucide="check" size="14"></i> Zapisz';
+        btn.classList.add('text-green-500');
+
+        sidebarSortable = new Sortable(moduleList, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function (evt) {
+                const order = Array.from(moduleList.children).map(item => item.dataset.moduleId);
+                localStorage.setItem('sidebarOrder', JSON.stringify(order));
+            }
+        });
+    } else {
+        btn.innerHTML = '<i data-lucide="move" size="14"></i> Edytuj';
+        btn.classList.remove('text-green-500');
+        if (sidebarSortable) {
+            sidebarSortable.destroy();
+            sidebarSortable = null;
+        }
+    }
+    lucide.createIcons();
+}
+
+function applySidebarOrder() {
+    const savedOrder = JSON.parse(localStorage.getItem('sidebarOrder'));
+    if (savedOrder) {
+        const moduleList = document.getElementById('module-list');
+        const items = Array.from(moduleList.children);
+        const sortedItems = savedOrder.map(id => items.find(item => item.dataset.moduleId === id));
+
+        sortedItems.forEach(item => {
+            if (item) moduleList.appendChild(item);
+        });
+    }
+}
 
 // --- DASHBOARD EDIT MODE ---
 let dashboardSortable = null;
