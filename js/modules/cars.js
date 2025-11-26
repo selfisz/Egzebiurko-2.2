@@ -353,19 +353,3 @@ function calcModalValuation() {
     
     document.getElementById('acValue').value = avg.toFixed(2);
 }
-
-// Helper for Copy
-function copyToClipboard(elementId) {
-    const el = document.getElementById(elementId);
-    if(!el || !el.value) return;
-    
-    navigator.clipboard.writeText(el.value).then(() => {
-        const originalBg = el.style.backgroundColor;
-        el.style.backgroundColor = "rgba(99, 102, 241, 0.2)";
-        setTimeout(() => {
-            el.style.backgroundColor = originalBg;
-        }, 200);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}

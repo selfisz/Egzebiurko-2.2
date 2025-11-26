@@ -637,10 +637,10 @@ window.APP_VIEWS = {
             </div>
             <div class="collapsible-content p-6 flex flex-col gap-4">
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="addTerrainNote('Drzwi zamknięte, brak domowników.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Drzwi Zamknięte</button>
-                    <button onclick="addTerrainNote('Zostawiono awizo w skrzynce oddawczej.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Zostawiono Awizo</button>
-                    <button onclick="addTerrainNote('Rozmowa z dłużnikiem, zobowiązał się do wpłaty.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Rozmowa z Dłużnikiem</button>
-                    <button onclick="addTerrainNote('Ustalono składniki majątkowe (pojazdy).')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Ustalono Majątek</button>
+                    <button onclick="window.terrainModule.addTerrainNote('Drzwi zamknięte, brak domowników.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Drzwi Zamknięte</button>
+                    <button onclick="window.terrainModule.addTerrainNote('Zostawiono awizo w skrzynce oddawczej.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Zostawiono Awizo</button>
+                    <button onclick="window.terrainModule.addTerrainNote('Rozmowa z dłużnikiem, zobowiązał się do wpłaty.')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Rozmowa z Dłużnikiem</button>
+                    <button onclick="window.terrainModule.addTerrainNote('Ustalono składniki majątkowe (pojazdy).')" class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Ustalono Majątek</button>
                 </div>
                 <textarea id="terrainNote" class="flex-1 w-full p-4 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm resize-none focus:border-indigo-500 outline-none" placeholder="Treść notatki z czynności..."></textarea>
             </div>
@@ -656,21 +656,21 @@ window.APP_VIEWS = {
                 <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 uppercase">Miejscowość (Baza)</label>
-                        <button onclick="toggleCityEditor()" class="text-[10px] font-bold text-indigo-600 hover:underline">Zarządzaj / Edytuj</button>
+                        <button onclick="window.terrainModule.toggleCityEditor()" class="text-[10px] font-bold text-indigo-600 hover:underline">Zarządzaj / Edytuj</button>
                     </div>
-                    <select id="logCitySelect" onchange="selectCity(this.value)" class="w-full p-2 border rounded-lg text-sm font-bold dark:bg-slate-800 dark:text-white mb-2"></select>
+                    <select id="logCitySelect" onchange="window.terrainModule.selectCity(this.value)" class="w-full p-2 border rounded-lg text-sm font-bold dark:bg-slate-800 dark:text-white mb-2"></select>
 
                     <!-- EDITOR PANEL -->
                     <div id="cityEditorPanel" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
                             <div class="p-4 border-b dark:border-slate-700 flex justify-between items-center">
                                  <h3 class="font-bold text-lg dark:text-white">Zarządzanie Bazą Miejscowości</h3>
-                                 <button onclick="toggleCityEditor()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+                                 <button onclick="window.terrainModule.toggleCityEditor()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
                             </div>
                             <div class="p-4 bg-slate-50 dark:bg-slate-900/50 border-b dark:border-slate-700">
                                  <p class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Importuj z AI</p>
                                  <label class="flex items-center justify-center w-full p-3 border-2 border-dashed border-indigo-300 rounded-lg cursor-pointer hover:bg-white/50 transition-colors">
-                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="importLogisticsFile(event)">
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="window.terrainModule.importLogisticsFile(event)">
                                     <div class="text-center">
                                         <i data-lucide="upload-cloud" class="mx-auto text-indigo-500 mb-1"></i>
                                         <span class="text-xs font-bold text-indigo-700">Wgraj zdjęcie cennika / PDF</span>
@@ -681,7 +681,7 @@ window.APP_VIEWS = {
                                 <!-- Injected JS Items -->
                             </div>
                             <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                                 <button onclick="addNewCity()" class="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2"><i data-lucide="plus"></i> Dodaj Nową</button>
+                                 <button onclick="window.terrainModule.addNewCity()" class="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2"><i data-lucide="plus"></i> Dodaj Nową</button>
                             </div>
                         </div>
                     </div>
@@ -690,7 +690,7 @@ window.APP_VIEWS = {
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dystans (km)</label>
-                        <input id="logDistance" type="number" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:text-white font-mono font-bold text-right" oninput="calcLogistics()" value="0">
+                        <input id="logDistance" type="number" class="w-full p-3 border rounded-xl dark:bg-slate-700 dark:text-white font-mono font-bold text-right" oninput="window.terrainModule.calcLogistics()" value="0">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Koszt (PLN)</label>
@@ -715,43 +715,43 @@ window.APP_VIEWS = {
                     <!-- 500 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">500 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="500" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="500" oninput="window.terrainModule.calcCash()">
                         <div id="val-500" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 200 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">200 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="200" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="200" oninput="window.terrainModule.calcCash()">
                         <div id="val-200" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 100 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">100 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="100" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="100" oninput="window.terrainModule.calcCash()">
                         <div id="val-100" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 50 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">50 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="50" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="50" oninput="window.terrainModule.calcCash()">
                         <div id="val-50" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 20 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">20 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="20" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="20" oninput="window.terrainModule.calcCash()">
                         <div id="val-20" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 10 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">10 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="10" oninput="calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="10" oninput="window.terrainModule.calcCash()">
                         <div id="val-10" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- Bilon -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">Bilon</div>
-                        <input type="number" step="0.01" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="1" oninput="calcCash()">
+                        <input type="number" step="0.01" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="1" oninput="window.terrainModule.calcCash()">
                         <div id="val-1" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                 </div>
@@ -762,8 +762,8 @@ window.APP_VIEWS = {
                         <span id="cashTotal" class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">0.00 zł</span>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="copyCashDetails()" class="py-2 bg-emerald-100 dark:bg-emerald-800/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold hover:bg-emerald-200 transition-colors">Kopiuj Szczegóły</button>
-                        <button onclick="copyCashTotal()" class="py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-200 dark:shadow-none">Kopiuj Kwotę</button>
+                        <button onclick="window.terrainModule.copyCashDetails()" class="py-2 bg-emerald-100 dark:bg-emerald-800/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold hover:bg-emerald-200 transition-colors">Kopiuj Szczegóły</button>
+                        <button onclick="window.terrainModule.copyCashTotal()" class="py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-200 dark:shadow-none">Kopiuj Kwotę</button>
                     </div>
                 </div>
             </div>
@@ -781,8 +781,8 @@ window.APP_VIEWS = {
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none" id="scannerPlaceholder">
                         <p class="text-slate-500 text-xs">Kliknij 'Skanuj', aby uruchomić kamerę.</p>
                     </div>
-                    <button onclick="startScanner()" id="btnStartScan" class="absolute bottom-2 right-2 bg-white/90 text-black px-3 py-1 rounded-lg text-xs font-bold shadow-lg hover:bg-white">Skanuj</button>
-                    <button onclick="stopScanner()" id="btnStopScan" class="hidden absolute bottom-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-lg hover:bg-red-600">Stop</button>
+                    <button onclick="window.terrainModule.startScanner()" id="btnStartScan" class="absolute bottom-2 right-2 bg-white/90 text-black px-3 py-1 rounded-lg text-xs font-bold shadow-lg hover:bg-white">Skanuj</button>
+                    <button onclick="window.terrainModule.stopScanner()" id="btnStopScan" class="hidden absolute bottom-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-lg hover:bg-red-600">Stop</button>
                 </div>
 
                 <div>
@@ -791,10 +791,10 @@ window.APP_VIEWS = {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="searchExternal('allegro')" class="py-3 bg-[#ff5a00] hover:bg-[#e04e00] text-white rounded-xl font-bold text-xs shadow-lg shadow-orange-200 dark:shadow-none transition-transform active:scale-95">
+                    <button onclick="window.terrainModule.searchExternal('allegro')" class="py-3 bg-[#ff5a00] hover:bg-[#e04e00] text-white rounded-xl font-bold text-xs shadow-lg shadow-orange-200 dark:shadow-none transition-transform active:scale-95">
                         Szukaj Allegro
                     </button>
-                    <button onclick="searchExternal('olx')" class="py-3 bg-[#002f34] hover:bg-[#002f34]/90 text-white rounded-xl font-bold text-xs shadow-lg shadow-slate-300 dark:shadow-none transition-transform active:scale-95">
+                    <button onclick="window.terrainModule.searchExternal('olx')" class="py-3 bg-[#002f34] hover:bg-[#002f34]/90 text-white rounded-xl font-bold text-xs shadow-lg shadow-slate-300 dark:shadow-none transition-transform active:scale-95">
                         Szukaj OLX
                     </button>
                 </div>

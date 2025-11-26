@@ -1,8 +1,18 @@
+// --- ROUTING ---
+window.addEventListener('hashchange', handleRouteChange);
+
+function handleRouteChange() {
+    const hash = window.location.hash.substring(1);
+    // If hash is empty or just '#', default to 'dashboard'
+    const moduleName = hash || 'dashboard';
+    goToModule(moduleName);
+}
+
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
-    goToModule('dashboard'); // This will load the dashboard view
+    handleRouteChange(); // Initial route handler
     lucide.createIcons();
     
     // Restore Sidebar State
