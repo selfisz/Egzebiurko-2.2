@@ -64,6 +64,28 @@ END:VCALENDAR`;
     saveAs(blob, `termin_${date}.ics`);
 }
 
+// --- CAR VALUATION ---
+function calculateAverageCarValue(prices, isDamaged) {
+    let sum = 0;
+    let count = 0;
+    prices.forEach(p => {
+        const price = parseFloat(p);
+        if (price > 0) {
+            sum += price;
+            count++;
+        }
+    });
+
+    if (count === 0) return 0;
+
+    let avg = sum / count;
+    if (isDamaged) {
+        avg *= 0.8; // -20%
+    }
+    return avg;
+}
+
 // Make global
 window.getPolishHolidays = getPolishHolidays;
 window.downloadICS = downloadICS;
+window.calculateAverageCarValue = calculateAverageCarValue;

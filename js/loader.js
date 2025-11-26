@@ -29,7 +29,8 @@ async function loadView(viewName) {
             case 'cars': if(window.loadGarage) window.loadGarage(); break;
             case 'notes': if(window.loadNotes) window.loadNotes(); break;
             case 'ai': if(window.loadPdfList) window.loadPdfList(); break;
-            case 'terrain': if(window.initTerrain) window.initTerrain(); break;
+            case 'terrain': if(window.terrainModule && window.terrainModule.initTerrain) window.terrainModule.initTerrain(); break;
+            case 'finance': if(window.initFinanceModule) window.initFinanceModule(); break;
             case 'settings':
                 if(document.getElementById('apiKeyPage') && window.state && window.state.GEMINI_API_KEY) {
                     document.getElementById('apiKeyPage').value = window.state.GEMINI_API_KEY;
