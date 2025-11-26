@@ -207,18 +207,24 @@ window.APP_VIEWS = {
      <div class="p-3 text-right text-xs text-slate-400 border-t dark:border-slate-700">Rekordów: <span id="bailiffTotal">0</span></div>
  </div>`,
     'finance': `<div class="max-w-6xl mx-auto mt-4">
-     <div class="mb-6">
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Kalkulatory</h2>
-        <p class="text-slate-500 text-sm">Narzędzia pomocnicze.</p>
+     <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Kalkulatory</h2>
+            <p class="text-slate-500 text-sm">Narzędzia pomocnicze.</p>
+        </div>
+        <button id="edit-finance-btn" onclick="toggleFinanceEditMode()" class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+            <i data-lucide="move" class="inline-block mr-2"></i> Edytuj układ
+        </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="glass-panel p-8 rounded-2xl shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
-            <h2 class="text-xl font-bold mb-2 dark:text-white">Balanser Odsetek</h2>
-            <p class="text-slate-500 text-sm mb-6">Przelicz proporcje wpłaty na należność główną.</p>
-
-            <div class="space-y-5">
+    <div id="finance-panels" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div data-panel-id="balance" class="sortable-item glass-panel rounded-2xl shadow-lg flex flex-col">
+            <div class="collapsible-header p-4 cursor-pointer flex justify-between items-center border-b dark:border-slate-700">
+                <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase"><i data-lucide="scale"></i> Balanser Odsetek</h3>
+                <i data-lucide="chevron-down" class="chevron-icon transition-transform"></i>
+            </div>
+            <div class="collapsible-content p-6 flex flex-col gap-4">
+                <p class="text-slate-500 text-xs mb-2">Przelicz proporcje wpłaty na należność główną.</p>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Stara Główna</label>
@@ -245,29 +251,33 @@ window.APP_VIEWS = {
             </div>
         </div>
 
-        <div class="glass-panel rounded-2xl shadow-lg p-8 h-fit relative overflow-hidden">
-             <div class="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
-             <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">Kalkulator Awiza</h3>
-             <p class="text-slate-500 text-sm mb-6">Oblicza termin fikcji doręczenia (14 dni).</p>
-
-             <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-100 dark:border-amber-800 mb-6">
-                 <p class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">Uwzględnia dni wolne od pracy oraz święta zgodnie z Art. 57 § 4 KPA.</p>
-             </div>
-             <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Data I Awiza</label>
-             <input id="awizoDate" type="date" class="w-full p-3 border rounded-xl mb-6 dark:bg-slate-700 dark:text-white" onchange="calcKPA()">
-             <div class="text-center">
-                 <p class="text-xs text-slate-400 uppercase font-bold">Skuteczne Doręczenie</p>
-                 <div id="kpaResult" class="text-4xl font-bold text-slate-800 dark:text-white my-3">-</div>
-                 <div id="kpaNote" class="text-xs text-red-500 font-bold h-4"></div>
-             </div>
+        <div data-panel-id="notice" class="sortable-item glass-panel rounded-2xl shadow-lg flex flex-col">
+            <div class="collapsible-header p-4 cursor-pointer flex justify-between items-center border-b dark:border-slate-700">
+                <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase"><i data-lucide="mail-warning"></i> Kalkulator Awiza</h3>
+                <i data-lucide="chevron-down" class="chevron-icon transition-transform"></i>
+            </div>
+            <div class="collapsible-content p-6 flex flex-col gap-4">
+                 <p class="text-slate-500 text-xs mb-2">Oblicza termin fikcji doręczenia (14 dni).</p>
+                 <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-100 dark:border-amber-800 mb-2">
+                     <p class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">Uwzględnia dni wolne od pracy oraz święta zgodnie z Art. 57 § 4 KPA.</p>
+                 </div>
+                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Data I Awiza</label>
+                 <input id="awizoDate" type="date" class="w-full p-3 border rounded-xl mb-4 dark:bg-slate-700 dark:text-white" onchange="calcKPA()">
+                 <div class="text-center">
+                     <p class="text-xs text-slate-400 uppercase font-bold">Skuteczne Doręczenie</p>
+                     <div id="kpaResult" class="text-4xl font-bold text-slate-800 dark:text-white my-3">-</div>
+                     <div id="kpaNote" class="text-xs text-red-500 font-bold h-4"></div>
+                 </div>
+            </div>
         </div>
 
-        <div class="glass-panel rounded-2xl shadow-lg p-8 h-fit relative overflow-hidden">
-             <div class="absolute top-0 left-0 w-full h-2 bg-blue-500"></div>
-             <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">Wycena Pojazdu</h3>
-             <p class="text-slate-500 text-sm mb-6">Średnia wartość rynkowa.</p>
-
-             <div class="space-y-3">
+        <div data-panel-id="valuation" class="sortable-item glass-panel rounded-2xl shadow-lg flex flex-col">
+            <div class="collapsible-header p-4 cursor-pointer flex justify-between items-center border-b dark:border-slate-700">
+                <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase"><i data-lucide="car"></i> Wycena Pojazdu</h3>
+                <i data-lucide="chevron-down" class="chevron-icon transition-transform"></i>
+            </div>
+            <div class="collapsible-content p-6 flex flex-col gap-3">
+                 <p class="text-slate-500 text-xs mb-2">Średnia wartość rynkowa.</p>
                  <div>
                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cena 1 (OLX)</label>
                      <input id="fcP1" type="number" class="w-full p-2 border rounded-lg dark:bg-slate-700 dark:text-white" oninput="calcFinanceCarValuation()">
@@ -288,7 +298,7 @@ window.APP_VIEWS = {
                      <p class="text-[10px] uppercase font-bold text-blue-400">Średnia Wartość</p>
                      <p id="fcResult" class="text-3xl font-bold text-blue-700 dark:text-blue-300 font-mono my-1">0.00 zł</p>
                  </div>
-             </div>
+            </div>
         </div>
     </div>
 </div>`,

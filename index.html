@@ -77,59 +77,63 @@
 
             <div class="sidebar-text pt-6 pb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-600">Moduły</div>
             <div class="h-px bg-slate-800/50 mx-3 my-2 lg:hidden"></div>
+            <div id="module-list" class="space-y-1.5">
+                <button data-module-id="terrain" onclick="goToModule('terrain')" id="nav-terrain" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="map-pin" size="22" class="group-hover/item:text-emerald-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Teren</span>
+                </button>
 
-            <button onclick="goToModule('terrain')" id="nav-terrain" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="map-pin" size="22" class="group-hover/item:text-emerald-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Teren</span>
-            </button>
+                <button data-module-id="generator" onclick="goToModule('generator')" id="nav-generator" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="file-text" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Generator Pism</span>
+                </button>
 
-            <button onclick="goToModule('generator')" id="nav-generator" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="file-text" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Generator Pism</span>
-            </button>
-            
-            <button onclick="goToModule('tracker')" id="nav-tracker" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item relative">
-                <i data-lucide="calendar-clock" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Terminarz</span>
-            </button>
+                <button data-module-id="tracker" onclick="goToModule('tracker')" id="nav-tracker" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item relative">
+                    <i data-lucide="calendar-clock" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Terminarz</span>
+                </button>
 
-            <button onclick="goToModule('cars')" id="nav-cars" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="car" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Ruchomości</span>
-            </button>
+                <button data-module-id="cars" onclick="goToModule('cars')" id="nav-cars" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="car" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Ruchomości</span>
+                </button>
 
-            <button onclick="goToModule('finance')" id="nav-finance" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="calculator" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Kalkulatory</span>
-            </button>
+                <button data-module-id="finance" onclick="goToModule('finance')" id="nav-finance" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="calculator" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Kalkulatory</span>
+                </button>
 
-            <button onclick="goToModule('registry')" id="nav-registry" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="gavel" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Rejestr Komorników</span>
-            </button>
-            
-            <button onclick="goToModule('ai')" id="nav-ai" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="brain-circuit" size="22" class="group-hover/item:text-purple-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Asystent AI</span>
-            </button>
+                <button data-module-id="registry" onclick="goToModule('registry')" id="nav-registry" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="gavel" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Rejestr Komorników</span>
+                </button>
 
-            <button onclick="goToModule('links')" id="nav-links" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="link" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Intranet</span>
-            </button>
+                <button data-module-id="ai" onclick="goToModule('ai')" id="nav-ai" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="brain-circuit" size="22" class="group-hover/item:text-purple-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Asystent AI</span>
+                </button>
 
-            <button onclick="goToModule('notes')" id="nav-notes" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
-                <i data-lucide="sticky-note" size="22" class="group-hover/item:text-yellow-400 transition-colors flex-shrink-0"></i>
-                <span class="text-sm font-medium sidebar-text whitespace-nowrap">Notatnik</span>
-            </button>
+                <button data-module-id="links" onclick="goToModule('links')" id="nav-links" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="link" size="22" class="group-hover/item:text-indigo-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Intranet</span>
+                </button>
+
+                <button data-module-id="notes" onclick="goToModule('notes')" id="nav-notes" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all group/item">
+                    <i data-lucide="sticky-note" size="22" class="group-hover/item:text-yellow-400 transition-colors flex-shrink-0"></i>
+                    <span class="text-sm font-medium sidebar-text whitespace-nowrap">Notatnik</span>
+                </button>
+            </div>
         </nav>
 
         <div class="p-4 border-t border-slate-700/50 space-y-3 bg-transparent">
-             <div class="flex justify-end mb-2">
-                 <button onclick="toggleSidebarMode()" id="sidebarPinBtn" class="text-slate-500 hover:text-white transition-colors" title="Przypnij/Odepnij Pasek">
-                     <i data-lucide="pin" size="16"></i>
-                 </button>
-             </div>
+            <div class="flex items-center justify-between mb-2">
+                <button id="edit-sidebar-btn" onclick="toggleSidebarEditMode()" class="text-slate-500 hover:text-white transition-colors text-xs font-bold flex items-center gap-2">
+                    <i data-lucide="move" size="14"></i> Edytuj
+                </button>
+                <button onclick="toggleSidebarMode()" id="sidebarPinBtn" class="text-slate-500 hover:text-white transition-colors" title="Przypnij/Odepnij Pasek">
+                    <i data-lucide="pin" size="16"></i>
+                </button>
+            </div>
 
              <div class="flex items-center justify-between bg-white/5 rounded-xl p-1.5 border border-white/5">
                 <button onclick="toggleDarkMode()" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Jasny/Ciemny">
