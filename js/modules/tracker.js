@@ -54,11 +54,11 @@ async function populateCaseDetails(id) {
 
 async function addNewCase() {
     const newCase = {
-        no: '1228-SEE-7',
+        no: `KMS-${new Date().getFullYear()}/`,
         date: new Date().toISOString().slice(0, 10),
         debtor: '',
         note: '',
-        unp: '1228-25-',
+        unp: '',
         status: 'new',
         priority: 'medium',
         archived: false,
@@ -84,10 +84,6 @@ async function saveCase() {
     c.priority = document.getElementById('trPriority').value;
     c.note = document.getElementById('trNote').value;
     c.lastModified = new Date().toISOString();
-
-    if (c.status === 'finished') {
-        c.archived = true;
-    }
 
     await state.db.put('cases', c);
     await renderFullTracker();
@@ -157,18 +153,11 @@ function createCaseBinder(c) {
     const priorityIcons = { 'high': 'chevrons-up', 'medium': 'equal', 'low': 'chevrons-down' };
     const priorityColors = { 'high': 'text-red-500', 'medium': 'text-slate-400', 'low': 'text-green-500' };
 
-    div.className = `relative flex flex-col justify-between p-4 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer group h-40 border border-slate-200 dark:border-slate-700`;
+    div.className = `flex flex-col p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-l-4 ${borderColor} cursor-pointer transition-all group relative shadow-sm h-40 justify-between`;
     div.onclick = () => openCase(c.id);
 
-    // Simulating a binder spine
-    const binderSpine = document.createElement('div');
-    binderSpine.className = `absolute left-0 top-0 bottom-0 w-2 rounded-l-lg ${borderColor.replace('border-', 'bg-')}`;
-    div.appendChild(binderSpine);
-
-    const content = document.createElement('div');
-    content.className = "pl-4 h-full flex flex-col justify-between";
-    content.innerHTML = `
-        <div class="flex-1">
+    div.innerHTML = `
+        <div>
             <div class="flex justify-between items-start">
                 <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColors[c.status]}">${statusText[c.status]}</span>
                 <span class="text-xs font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-slate-500'}">${c.archived ? 'Zarchiwizowano' : `${daysLeft} dni`}</span>
@@ -178,7 +167,7 @@ function createCaseBinder(c) {
                 <div class="text-xs text-slate-500 truncate">${c.debtor || 'Brak danych'}</div>
             </div>
         </div>
-        <div class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700/50 mt-2">
+        <div class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700/50">
             <div class="flex items-center gap-2 text-xs text-slate-400">
                 <i data-lucide="${priorityIcons[c.priority]}" size="14" class="${priorityColors[c.priority]}"></i>
                 <span>UNP: ${c.unp || '-'}</span>
@@ -189,7 +178,6 @@ function createCaseBinder(c) {
             </div>
         </div>
     `;
-    div.appendChild(content);
     return div;
 }
 
