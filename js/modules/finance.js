@@ -68,6 +68,9 @@ function calcFinanceCarValuation() {
 
     document.getElementById('fcResult').innerText = avg.toFixed(2) + " zł";
 }
+
+// --- LAYOUT CUSTOMIZATION ---
+let financeSortable = null;
 let isFinanceEditMode = false;
 
 function initFinanceModule() {

@@ -29,21 +29,7 @@ async function loadView(viewName) {
             case 'cars': if(window.loadGarage) window.loadGarage(); break;
             case 'notes': if(window.loadNotes) window.loadNotes(); break;
             case 'ai': if(window.loadPdfList) window.loadPdfList(); break;
-            case 'terrain':
-                try {
-                    const module = await import('./modules/terrain.js');
-                    if (module.default && module.default.init) {
-                        module.default.init();
-                    } else if (window.terrainModule && window.terrainModule.init) {
-                         window.terrainModule.init();
-                    }
-                } catch (e) {
-                    console.error("Failed to load terrain module dynamically, falling back to global.", e);
-                    if (window.terrainModule && window.terrainModule.init) {
-                        window.terrainModule.init();
-                    }
-                }
-                break;
+            case 'terrain': if(window.terrainModule && window.terrainModule.initTerrain) window.terrainModule.initTerrain(); break;
             case 'finance': if(window.initFinanceModule) window.initFinanceModule(); break;
             case 'settings':
                 if(document.getElementById('apiKeyPage') && window.state && window.state.GEMINI_API_KEY) {

@@ -85,23 +85,7 @@ function calculateAverageCarValue(prices, isDamaged) {
     return avg;
 }
 
-function copyToClipboard(elementId) {
-    const el = document.getElementById(elementId);
-    if (!el || !el.value) return;
-
-    navigator.clipboard.writeText(el.value).then(() => {
-        const originalBg = el.style.backgroundColor;
-        el.style.backgroundColor = "rgba(99, 102, 241, 0.2)";
-        setTimeout(() => {
-            el.style.backgroundColor = originalBg;
-        }, 200);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}
-
 // Make global
 window.getPolishHolidays = getPolishHolidays;
 window.downloadICS = downloadICS;
 window.calculateAverageCarValue = calculateAverageCarValue;
-window.copyToClipboard = copyToClipboard;
