@@ -2,32 +2,45 @@
 
 async function checkNotifications() {
     const cases = await state.db.getAll('cases');
-    const reminders = await state.db.getAll('reminders');
-    const today = new Date().toISOString().slice(0,10);
     const now = new Date();
 
     let notifs = [];
 
-    // 1. Cases expiring in < 3 days
     cases.filter(c => !c.archived).forEach(c => {
-        const d = new Date(c.date); d.setDate(d.getDate()+30);
+        const d = new Date(c.date);
+        d.setDate(d.getDate() + 30);
         const daysLeft = Math.ceil((d - now) / 86400000);
-        if(daysLeft <= 3 && daysLeft >= 0) {
-            notifs.push({type: 'alert-triangle', color: 'red', text: `Sprawa ${c.no} - termin mija za ${daysLeft} dni!`, action: ()=>goToModule('tracker')});
+
+        const key = `${c.id}-${daysLeft}`;
+
+        if (daysLeft >= 0) {
+            if (daysLeft <= 3) {
+                notifs.push({
+                    key: key,
+                    type: 'alert-triangle',
+                    color: 'red',
+                    text: `Sprawa ${c.no} - termin mija za ${daysLeft} dni!`,
+                    action: () => goToModule('tracker')
+                });
+            } else if (daysLeft <= 7 && c.priority === 'high') {
+                notifs.push({
+                    key: key,
+                    type: 'alert-triangle',
+                    color: 'orange',
+                    text: `Pilna sprawa ${c.no} - termin mija za ${daysLeft} dni.`,
+                    action: () => goToModule('tracker')
+                });
+            }
         }
     });
 
-    // 2. Reminders for today
-    reminders.forEach(r => {
-        if(r.date === today) {
-            notifs.push({type: 'bell', color: 'indigo', text: `Przypomnienie: ${r.text}`, action: ()=>goToModule('tracker')});
-        }
-    });
+    // Remove duplicates, keeping the most urgent one (e.g. 3-day is more urgent than 7-day)
+    const uniqueNotifs = Array.from(new Map(notifs.map(n => [n.key.split('-')[0], n])).values());
 
     // Render Badge
     const badge = document.getElementById('notifBadge');
-    if(notifs.length > 0) {
-        badge.innerText = notifs.length;
+    if(uniqueNotifs.length > 0) {
+        badge.innerText = uniqueNotifs.length;
         badge.classList.remove('hidden');
     } else {
         badge.classList.add('hidden');
@@ -36,10 +49,10 @@ async function checkNotifications() {
     // Render List
     const list = document.getElementById('notifList');
     list.innerHTML = '';
-    if(notifs.length === 0) {
+    if(uniqueNotifs.length === 0) {
         list.innerHTML = '<div class="text-center p-4 text-slate-400 text-xs">Brak nowych powiadomień.</div>';
     } else {
-        notifs.forEach(n => {
+        uniqueNotifs.forEach(n => {
             const div = document.createElement('div');
             div.className = "p-3 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex gap-3 items-start";
             div.innerHTML = `

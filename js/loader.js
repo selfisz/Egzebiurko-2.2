@@ -22,7 +22,7 @@ async function loadView(viewName) {
                 if(window.renderDashboardWidgets) window.renderDashboardWidgets();
                 if(window.applyDashboardOrder) window.applyDashboardOrder();
                 break;
-            case 'tracker': if(window.renderFullTracker) { window.renderFullTracker(); window.renderCalendar(); } break;
+            case 'tracker': if(window.trackerModule && window.trackerModule.initTracker) window.trackerModule.initTracker(); break;
             case 'registry': if(window.loadBailiffs) window.loadBailiffs(); break;
             case 'links': if(window.renderLinksList) window.renderLinksList(); break;
             case 'generator': if(window.loadLibrary) { window.loadLibrary(); window.renderDictList(); } break;
