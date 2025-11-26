@@ -59,27 +59,12 @@ function calcKPA() {
 }
 
 function calcFinanceCarValuation() {
-    const p1 = parseFloat(document.getElementById('fcP1').value) || 0;
-    const p2 = parseFloat(document.getElementById('fcP2').value) || 0;
-    const p3 = parseFloat(document.getElementById('fcP3').value) || 0;
-    
-    let count = 0;
-    let sum = 0;
-    
-    if(p1 > 0) { sum += p1; count++; }
-    if(p2 > 0) { sum += p2; count++; }
-    if(p3 > 0) { sum += p3; count++; }
-    
-    if(count === 0) {
-        document.getElementById('fcResult').innerText = "0.00 zł";
-        return;
-    }
-    
-    let avg = sum / count;
-    
-    if(document.getElementById('fcBad').checked) {
-        avg *= 0.8;
-    }
-    
+    const p1 = document.getElementById('fcP1').value;
+    const p2 = document.getElementById('fcP2').value;
+    const p3 = document.getElementById('fcP3').value;
+    const isDamaged = document.getElementById('fcBad').checked;
+
+    const avg = calculateAverageCarValue([p1, p2, p3], isDamaged);
+
     document.getElementById('fcResult').innerText = avg.toFixed(2) + " zł";
 }

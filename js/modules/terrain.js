@@ -66,7 +66,9 @@ function addNewCase() {
         pesel: '',
         notes: '',
         arrearsHTML: null,
-        tags: []
+        tags: [],
+        syncStatus: 'new',
+        lastModified: new Date().toISOString()
     };
     terrainCases.push(newCase);
     saveCases();
@@ -142,6 +144,12 @@ function updateCaseData(field, value) {
     if (!c) return;
 
     c[field] = value;
+
+    // Update sync status if the case is not new
+    if (c.syncStatus !== 'new') {
+        c.syncStatus = 'modified';
+    }
+    c.lastModified = new Date().toISOString();
 
     if (field === 'name' || field === 'surname' || field === 'company') {
         const label = (c.name || c.surname) ? `${c.name} ${c.surname}` : (c.company || 'Nowa Sprawa');
@@ -692,31 +700,143 @@ Wygenerowano w EgzeBiurko (Field Mode)`;
     });
 }
 
-// Global Exports
-window.initTerrain = initTerrain;
-window.switchFolderTab = switchFolderTab;
-window.addTerrainNote = addTerrainNote;
-window.selectCity = selectCity;
-window.toggleCityEditor = toggleCityEditor;
-window.addNewCity = addNewCity;
-window.saveCityKey = saveCityKey;
-window.deleteCity = deleteCity;
-window.importLogisticsFile = importLogisticsFile;
-window.calcCash = calcCash;
-window.copyCashTotal = copyCashTotal;
-window.copyCashDetails = copyCashDetails;
-window.startScanner = startScanner;
-window.stopScanner = stopScanner;
-window.searchExternal = searchExternal;
-window.copyTerrainReport = copyTerrainReport;
-window.calcLogistics = calcLogistics;
-// New Briefcase Exports
-window.addNewCase = addNewCase;
-window.deleteCase = deleteCase;
-window.openCase = openCase;
-window.closeCase = closeCase;
-window.updateCaseData = updateCaseData;
-window.processArrearsPDF = processArrearsPDF;
-window.openMap = openMap;
-window.toggleTag = toggleTag;
-window.toggleTerrainEditMode = toggleTerrainEditMode;
+async function synchronizeData() {
+    try {
+        const terrainCasesRaw = localStorage.getItem('lex_terrain_cases');
+        const terrainCases = terrainCasesRaw ? JSON.parse(terrainCasesRaw) : [];
+        const dbCases = await state.db.getAll('cases');
+
+        let newCount = 0, modifiedCount = 0, conflictCount = 0, syncedFromDB = 0;
+
+        const dbCasesByTerrainId = new Map(dbCases.filter(c => c.terrainId).map(c => [c.terrainId, c]));
+
+        // --- Sync from Terrain to DB ---
+        for (const tCase of terrainCases) {
+            const now = new Date().toISOString();
+
+            if (tCase.syncStatus === 'new') {
+                const newDbCase = {
+                    no: `TEREN-${tCase.id.slice(-4)}`,
+                    date: now.slice(0, 10),
+                    debtor: `${tCase.name} ${tCase.surname}`.trim() || tCase.company,
+                    note: `[TEREN] Adres: ${tCase.address}\nTelefon: ${tCase.phone}\nPESEL/NIP: ${tCase.pesel}\nNotatki: ${tCase.notes}`,
+                    urgent: tCase.tags.some(t => t.name === 'Pilne'),
+                    favorite: false, archived: false,
+                    terrainId: tCase.id,
+                    lastModified: now
+                };
+                await state.db.add('cases', newDbCase);
+                tCase.syncStatus = 'synced';
+                tCase.lastModified = now;
+                newCount++;
+            } else if (tCase.syncStatus === 'modified') {
+                const dbCase = dbCasesByTerrainId.get(tCase.id);
+                if (dbCase) {
+                    const tDate = new Date(tCase.lastModified);
+                    const dbDate = new Date(dbCase.lastModified);
+
+                    // Conflict detection (if DB is newer by more than a few seconds)
+                    if (dbDate > tDate && (dbDate - tDate > 2000)) {
+                        conflictCount++;
+                        if (confirm(`Konflikt! Sprawa "${dbCase.debtor}" została zmieniona w obu miejscach.\n\nNaciśnij OK, aby zachować wersję z terenu (nadpisze zmiany w biurze).\nNaciśnij Anuluj, aby zachować wersję z biura (nadpisze zmiany w terenie).`)) {
+                            // Keep terrain version
+                            dbCase.debtor = `${tCase.name} ${tCase.surname}`.trim() || tCase.company;
+                            dbCase.note = `[TEREN] Adres: ${tCase.address}\nTelefon: ${tCase.phone}\nPESEL/NIP: ${tCase.pesel}\nNotatki: ${tCase.notes}`;
+                            dbCase.urgent = tCase.tags.some(t => t.name === 'Pilne');
+                            dbCase.lastModified = now;
+                            await state.db.put('cases', dbCase);
+                            tCase.syncStatus = 'synced';
+                            tCase.lastModified = now;
+                            modifiedCount++;
+                        } else {
+                            // Keep DB version - update terrain case
+                            tCase.name = dbCase.debtor.split(' ')[0] || '';
+                            tCase.surname = dbCase.debtor.split(' ').slice(1).join(' ') || '';
+                            tCase.notes = dbCase.note;
+                            tCase.tags = dbCase.urgent ? [{ name: 'Pilne', color: 'orange' }] : [];
+                            tCase.syncStatus = 'synced';
+                            tCase.lastModified = dbCase.lastModified;
+                        }
+                    } else {
+                        // No conflict, just update DB
+                        dbCase.debtor = `${tCase.name} ${tCase.surname}`.trim() || tCase.company;
+                        dbCase.note = `[TEREN] Adres: ${tCase.address}\nTelefon: ${tCase.phone}\nPESEL/NIP: ${tCase.pesel}\nNotatki: ${tCase.notes}`;
+                        dbCase.urgent = tCase.tags.some(t => t.name === 'Pilne');
+                        dbCase.lastModified = now;
+                        await state.db.put('cases', dbCase);
+                        tCase.syncStatus = 'synced';
+                        tCase.lastModified = now;
+                        modifiedCount++;
+                    }
+                }
+            }
+        }
+
+        // --- Sync from DB to Terrain ---
+        for (const dbCase of dbCases) {
+            // Check if a terrain case already exists that is linked to this dbCase
+            const existingTCase = terrainCases.find(t => t.terrainId === dbCase.id.toString());
+
+            if (!existingTCase) {
+                const newTCase = {
+                    id: `DB-${dbCase.id}-${Date.now()}`, // More unique ID
+                    terrainId: dbCase.id.toString(),      // Link to the original DB record
+                    name: (dbCase.debtor || '').split(' ')[0],
+                    surname: (dbCase.debtor || '').split(' ').slice(1).join(' '),
+                    company: '', // DB schema doesn't have this
+                    address: '', // DB schema doesn't have this
+                    phone: '', // DB schema doesn't have this
+                    pesel: '', // DB schema doesn't have this
+                    debtAmount: '', // DB schema doesn't have this
+                    notes: dbCase.note || '',
+                    tags: dbCase.urgent ? [{ name: 'Pilne', color: 'orange' }] : [],
+                    syncStatus: 'synced',
+                    lastModified: dbCase.lastModified
+                };
+                terrainCases.push(newTCase);
+                syncedFromDB++;
+            }
+        }
+
+        localStorage.setItem('lex_terrain_cases', JSON.stringify(terrainCases));
+        alert(`Synchronizacja zakończona!\n\n- Nowe sprawy (teren -> biuro): ${newCount}\n- Zaktualizowane sprawy (teren -> biuro): ${modifiedCount}\n- Nowe sprawy (biuro -> teren): ${syncedFromDB}\n- Wykryte konflikty: ${conflictCount}`);
+
+        renderBriefcase(); // Refresh the view with new statuses
+        if (window.renderFullTracker) renderFullTracker(); // Refresh tracker if visible
+
+    } catch (error) {
+        console.error("Synchronization failed:", error);
+        alert("Błąd synchronizacji: " + error.message);
+    }
+}
+
+// --- MODULE EXPORT ---
+window.terrainModule = {
+    initTerrain,
+    synchronizeData,
+    switchFolderTab,
+    addTerrainNote,
+    selectCity,
+    toggleCityEditor,
+    addNewCity,
+    saveCityKey,
+    deleteCity,
+    importLogisticsFile,
+    calcCash,
+    copyCashTotal,
+    copyCashDetails,
+    startScanner,
+    stopScanner,
+    searchExternal,
+    copyTerrainReport,
+    calcLogistics,
+    addNewCase,
+    deleteCase,
+    openCase,
+    closeCase,
+    updateCaseData,
+    processArrearsPDF,
+    openMap,
+    toggleTag,
+    toggleTerrainEditMode
+};

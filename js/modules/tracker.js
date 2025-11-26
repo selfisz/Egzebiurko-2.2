@@ -17,12 +17,13 @@ async function addCase() {
     if(state.editingId && state.editingType === 'case') {
         const item = await state.db.get('cases', state.editingId);
         item.no = no; item.date = date; item.unp = unp; item.debtor = debtor; item.note = note; item.urgent = urgent;
+        item.lastModified = new Date().toISOString();
         await state.db.put('cases', item);
         state.editingId = null; state.editingType = null;
         document.querySelector('button[onclick="addCase()"]').innerHTML = '<i data-lucide="plus"></i> Nowa Sprawa';
         document.getElementById('trNo').classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-200');
     } else {
-        await state.db.add('cases',{no, date, unp, debtor, note, urgent, favorite: false, archived: false}); 
+        await state.db.add('cases',{no, date, unp, debtor, note, urgent, favorite: false, archived: false, lastModified: new Date().toISOString()});
     }
     
     document.getElementById('trNo').value='';
