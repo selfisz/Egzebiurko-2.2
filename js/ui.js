@@ -162,93 +162,53 @@ async function runGlobalSearch(q) {
     }
 }
 
+
+
 // --- DASHBOARD WIDGETS ---
 async function renderDashboardWidgets() {
-    const c = document.getElementById('dashboard-widgets');
-    if(!c) return;
-    c.innerHTML = '';
-    
-    // Urgent Cases Widget
-    const allCases = await state.db.getAll('cases');
+    const container = document.getElementById('dashboard-widgets');
+    if (!container) return;
+
+    // --- URGENT CASES WIDGET ---
+    const cases = await state.db.getAll('cases');
     const now = new Date();
-    const urgentCases = allCases.filter(x => {
-        let isUrgent = x.urgent;
-        if(x.date) {
-            const d = new Date(x.date); d.setDate(d.getDate()+30);
-            const daysLeft = Math.ceil((d - now) / 86400000);
-            if(daysLeft <= 7 && daysLeft >= 0) isUrgent = true;
-        }
-        return isUrgent;
-    }).slice(0, 5); // Max 5
+    const urgentCases = cases
+        .filter(c => !c.archived && c.priority === 'high')
+        .map(c => {
+            const d = new Date(c.date);
+            d.setDate(d.getDate() + 30);
+            return { ...c, daysLeft: Math.ceil((d - now) / 86400000) };
+        })
+        .filter(c => c.daysLeft >= 0)
+        .sort((a, b) => a.daysLeft - b.daysLeft)
+        .slice(0, 5); // Limit to top 5
 
-    const w1 = document.createElement('div');
-    w1.className = "glass-panel p-6 rounded-2xl shadow-lg flex flex-col";
-    w1.innerHTML = `<h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="alert-circle" class="text-red-500"></i> Pilne Sprawy</h3>`;
-    
-    if(urgentCases.length === 0) {
-        w1.innerHTML += `<div class="text-sm text-slate-400 flex-1 flex items-center justify-center">Brak pilnych spraw.</div>`;
+    let widgetHTML = `
+        <div class="glass-panel p-6 rounded-2xl shadow-sm">
+            <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase mb-4">
+                <i data-lucide="alert-triangle" class="text-red-500"></i> Pilne Sprawy
+            </h3>
+            <div class="space-y-3">
+    `;
+
+    if (urgentCases.length === 0) {
+        widgetHTML += `<p class="text-xs text-slate-400 text-center py-4">Brak pilnych spraw.</p>`;
     } else {
-        const ul = document.createElement('div');
-        ul.className = "space-y-2 flex-1 overflow-y-auto custom-scroll max-h-64";
-        urgentCases.forEach(u => {
-            const d = new Date(u.date); d.setDate(d.getDate()+30);
-            const days = Math.ceil((d - now) / 86400000);
-            ul.innerHTML += `
-                <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 rounded-lg flex justify-between items-center cursor-pointer hover:bg-red-100 transition-colors" onclick="goToModule('tracker')">
+        urgentCases.forEach(c => {
+            widgetHTML += `
+                <div onclick="goToModule('tracker')" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 cursor-pointer">
                     <div>
-                        <div class="font-bold text-xs text-red-800 dark:text-red-200">${u.no}</div>
-                        <div class="text-[10px] text-red-600 dark:text-red-400">${u.debtor || '-'}</div>
+                        <div class="font-bold text-xs text-slate-800 dark:text-white">${c.no}</div>
+                        <div class="text-[10px] text-slate-500">${c.debtor}</div>
                     </div>
-                    <div class="text-xs font-bold ${days<3?'text-red-600 animate-pulse':'text-red-500'}">${days} dni</div>
-                </div>`;
-        });
-        w1.appendChild(ul);
-    }
-    c.appendChild(w1);
-
-    // Favorites Widget
-    const cars = await state.db.getAll('garage');
-    const links = JSON.parse(localStorage.getItem('lex_links') || '[]');
-    
-    const favs = [
-        ...allCases.filter(x=>x.favorite).map(x=>({...x, _type:'case'})),
-        ...cars.filter(x=>x.favorite).map(x=>({...x, _type:'car'})),
-        ...links.filter(x=>x.favorite).map(x=>({...x, _type:'link'}))
-    ].slice(0, 6);
-
-    const w2 = document.createElement('div');
-    w2.className = "glass-panel p-6 rounded-2xl shadow-lg flex flex-col";
-    w2.innerHTML = `<h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="briefcase" class="text-indigo-500"></i> Teczka (Ulubione)</h3>`;
-    
-    if(favs.length === 0) {
-        w2.innerHTML += `<div class="text-sm text-slate-400 flex-1 flex items-center justify-center">Brak elementów w teczce.</div>`;
-    } else {
-        const grid = document.createElement('div');
-        grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 content-start";
-        favs.forEach(f => {
-            let icon = 'help-circle';
-            let title = '';
-            let sub = '';
-            let click = null;
-
-            if(f._type === 'case') { icon='calendar-clock'; title=f.no; sub=f.debtor; click=()=>goToModule('tracker'); }
-            if(f._type === 'car') { icon='car'; title=f.name; sub=f.date; click=()=>goToModule('cars'); }
-            if(f._type === 'link') { icon='link'; title=f.name; sub='Link'; click=()=>window.open(f.url); }
-
-            const el = document.createElement('div');
-            el.className = "p-2 bg-slate-50 dark:bg-slate-700/50 border dark:border-slate-700 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors";
-            el.innerHTML = `
-                <div class="p-1.5 bg-white dark:bg-slate-800 rounded shadow-sm text-indigo-500"><i data-lucide="${icon}" size="14"></i></div>
-                <div class="overflow-hidden">
-                    <div class="font-bold text-xs text-slate-700 dark:text-slate-200 truncate">${title}</div>
-                    <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${sub}</div>
+                    <div class="text-xs font-bold text-red-500">${c.daysLeft} dni</div>
                 </div>
             `;
-            el.onclick = click;
-            grid.appendChild(el);
         });
-        w2.appendChild(grid);
     }
-    c.appendChild(w2);
-    lucide.createIcons();
+
+    widgetHTML += `</div></div>`;
+    container.innerHTML = widgetHTML;
+
+    if (window.lucide) lucide.createIcons();
 }
