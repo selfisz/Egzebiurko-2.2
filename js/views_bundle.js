@@ -464,39 +464,119 @@ window.APP_VIEWS = {
         </div>
     </div>
 </div>`,
-    'tracker': `<div class="max-w-6xl mx-auto flex flex-col h-full">
-     <div class="mb-6 flex items-center justify-between">
-         <div>
-             <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Terminarz</h2>
-             <p class="text-slate-500 text-sm">Kontrola terminów i spraw.</p>
-         </div>
-         <button onclick="addCase()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-700 text-sm flex items-center gap-2"><i data-lucide="plus"></i> Nowa Sprawa</button>
-     </div>
-     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
-         <div class="lg:col-span-2 glass-panel rounded-2xl shadow-sm flex flex-col overflow-hidden">
-             <div class="p-4 border-b dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
-                 <div class="flex gap-2">
-                     <input id="trNo" placeholder="Nr Sprawy" class="flex-1 border p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
-                     <input id="trUnp" placeholder="UNP" class="w-32 border p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
-                     <input id="trDate" type="date" class="border p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                 </div>
-                 <div class="flex gap-2">
-                     <input id="trDebtor" placeholder="Zobowiązany" class="flex-1 border p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
-                     <input id="trNote" placeholder="Notatka..." class="flex-1 border p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
-                     <label class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 px-2 whitespace-nowrap"><input type="checkbox" id="trUrgent" class="w-4 h-4 text-red-600 rounded"> Pilne</label>
-                 </div>
-             </div>
-             <div id="trList" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll"></div>
-         </div>
-         <div class="glass-panel rounded-2xl shadow-sm p-6 h-fit flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-                <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><i data-lucide="chevron-left"></i></button>
-                <h3 id="calendarMonth" class="font-bold text-slate-800 dark:text-white capitalize">...</h3>
-                <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><i data-lucide="chevron-right"></i></button>
+    'tracker': `<div class="flex flex-col h-full gap-6 lg:flex-row">
+    <div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-96 shadow-2xl animate-fade">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold dark:text-white">Dodaj Przypomnienie</h3>
+                <button onclick="trackerModule.closeReminderModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
-            <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
-         </div>
-     </div>
+            <p id="reminderDateDisplay" class="text-xs text-indigo-600 font-bold mb-3 uppercase tracking-wider"></p>
+            <input type="hidden" id="reminderDateInput">
+
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Treść</label>
+            <textarea id="reminderText" rows="3" class="w-full border p-3 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none mb-4" placeholder="Np. Wyślij pismo..."></textarea>
+
+            <button onclick="trackerModule.saveReminder()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors">Zapisz</button>
+        </div>
+    </div>
+    <!-- Main content area -->
+    <div class="relative flex-1 overflow-hidden glass-panel rounded-2xl shadow-sm">
+        <!-- Grid View (List of cases) -->
+        <div id="tracker-grid-view" class="absolute inset-0 flex flex-col transition-transform duration-300 bg-white dark:bg-slate-900">
+            <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
+                <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
+                        <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors" oninput="trackerModule.renderFullTracker(this.value)">
+                    </div>
+                    <div class="text-xs font-bold text-slate-500" id="tracker-case-count">Ładuję...</div>
+                    <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
+                    <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
+                    <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
+                </div>
+            </div>
+            <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">
+                <!-- Case binders will be injected here -->
+            </div>
+        </div>
+
+        <!-- Detail View (Editing a case) -->
+        <div id="tracker-detail-view" class="absolute inset-0 flex flex-col transition-transform duration-300 translate-x-full bg-white dark:bg-slate-800">
+             <div class="flex items-center pr-2 text-xs border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
+                <button onclick="trackerModule.closeCase()" class="px-4 py-3 mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-r dark:border-slate-700"><i data-lucide="arrow-left"></i></button>
+                <div id="tracker-case-label" class="font-mono text-slate-400">Edycja sprawy...</div>
+                <button id="save-case-btn" onclick="trackerModule.saveCase()" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
+             </div>
+            <div class="flex-1 p-6 overflow-y-auto custom-scroll">
+                 <div class="max-w-2xl mx-auto space-y-4">
+                    <!-- Case Form Fields -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nr Sprawy</label>
+                            <input id="trNo" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">UNP</label>
+                            <input id="trUnp" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Zobowiązany</label>
+                        <input id="trDebtor" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Wpływu</label>
+                        <input id="trDate" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                            <select id="trStatus" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                <option value="new">Nowa</option>
+                                <option value="in-progress">W toku</option>
+                                <option value="finished">Zakończona</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
+                        <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                        <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Notatka</label>
+                        <textarea id="trNote" rows="4" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white resize-y"></textarea>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column with Calendar & Filters -->
+    <div class="lg:w-80 flex flex-col gap-6">
+        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
+            <div class="flex items-center justify-between">
+                <button onclick="trackerModule.changeMonth(-1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"><i data-lucide="chevron-left"></i></button>
+                <h3 id="calendarMonth" class="font-bold capitalize dark:text-white">...</h3>
+                <button onclick="trackerModule.changeMonth(1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"><i data-lucide="chevron-right"></i></button>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-4 text-xs text-center"></div>
+        </div>
+        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
+            <h3 class="flex items-center gap-2 mb-4 text-sm font-bold uppercase"><i data-lucide="filter"></i> Filtruj i Sortuj</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sortuj po</label>
+                    <select id="trSort" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                        <option value="deadline">Termin</option>
+                        <option value="added">Data dodania</option>
+                        <option value="no">Sygnatura</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>`,
     'terrain': `<div id="view-terrain" class="max-w-7xl mx-auto h-full flex flex-col gap-6">
     <div class="flex justify-between items-end mb-2">

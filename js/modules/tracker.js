@@ -1,248 +1,366 @@
-// --- MODULE: TRACKER ---
-// Note: renderCalendar might be circular if UI imports tracker.
-// We defined renderCalendar in tracker in the old code, but UI calls it.
-// Let's keep renderCalendar logic IN tracker, but export it for UI.
+const trackerModule = (() => {
+    let currentCaseId = null;
+    let cases = [];
+    let isArchivedView = false;
+    let currentDate = new Date();
+    const STORE_NAME = 'tracker';
 
-
-async function addCase() {
-    const no=document.getElementById('trNo').value;
-    const date=document.getElementById('trDate').value;
-    const unp=document.getElementById('trUnp').value;
-    const debtor=document.getElementById('trDebtor').value;
-    const note=document.getElementById('trNote').value;
-    const urgent = document.getElementById('trUrgent').checked;
-
-    if(!no||!date) return alert("Podaj Nr Sprawy i Datę!"); 
-    
-    if(state.editingId && state.editingType === 'case') {
-        const item = await state.db.get('cases', state.editingId);
-        item.no = no; item.date = date; item.unp = unp; item.debtor = debtor; item.note = note; item.urgent = urgent;
-        item.lastModified = new Date().toISOString();
-        await state.db.put('cases', item);
-        state.editingId = null; state.editingType = null;
-        document.querySelector('button[onclick="addCase()"]').innerHTML = '<i data-lucide="plus"></i> Nowa Sprawa';
-        document.getElementById('trNo').classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-200');
-    } else {
-        await state.db.add('cases',{no, date, unp, debtor, note, urgent, favorite: false, archived: false, lastModified: new Date().toISOString()});
-    }
-    
-    document.getElementById('trNo').value='';
-    document.getElementById('trUnp').value='';
-    document.getElementById('trDebtor').value='';
-    document.getElementById('trNote').value='';
-    document.getElementById('trUrgent').checked=false;
-    
-    renderFullTracker();
-    if(window.checkNotifications) window.checkNotifications(); // Use window version if circular dep issue
-    renderCalendar();
-    if(window.renderDashboardWidgets) window.renderDashboardWidgets();
-}
-
-async function editCase(id) {
-    const item = await state.db.get('cases', id);
-    if(item) {
-        document.getElementById('trNo').value = item.no;
-        document.getElementById('trDate').value = item.date;
-        document.getElementById('trUnp').value = item.unp || '';
-        document.getElementById('trDebtor').value = item.debtor || '';
-        document.getElementById('trNote').value = item.note || '';
-        document.getElementById('trUrgent').checked = item.urgent || false;
-        
-        state.editingId = id;
-        state.editingType = 'case';
-        const btn = document.querySelector('button[onclick="addCase()"]');
-        btn.innerText = "Zapisz Zmiany";
-        
-        document.getElementById('trNo').focus();
-        document.getElementById('trNo').classList.add('border-indigo-500', 'ring-2', 'ring-indigo-200');
-    }
-}
-
-async function renderFullTracker() {
-    const l=document.getElementById('trList'); 
-    if(!l) return;
-    l.innerHTML=''; 
-    const c=await state.db.getAll('cases');
-    
-    // Add controls if not present
-    const header = document.querySelector('#view-tracker h2')?.parentElement;
-    if(header && !document.getElementById('archiveToggleBtn')) {
-        const controls = document.createElement('div');
-        controls.className = "flex gap-4 mt-2 items-center";
-        
-        const btn = document.createElement('button');
-        btn.id = 'archiveToggleBtn';
-        btn.className = "text-xs font-bold text-slate-500 hover:text-indigo-600 underline";
-        btn.onclick = () => { state.showArchived = !state.showArchived; renderFullTracker(); };
-        
-        const sortSel = document.createElement('select');
-        sortSel.className = "text-xs border rounded p-1 dark:bg-slate-700 dark:text-white outline-none";
-        sortSel.innerHTML = `
-            <option value="deadline">Sort: Termin</option>
-            <option value="added">Sort: Data dodania</option>
-            <option value="no">Sort: Sygnatura</option>
-        `;
-        sortSel.onchange = (e) => { state.trackerSort = e.target.value; renderFullTracker(); };
-        
-        controls.appendChild(btn);
-        controls.appendChild(sortSel);
-        header.appendChild(controls);
-    }
-    
-    const arcBtn = document.getElementById('archiveToggleBtn');
-    if(arcBtn) arcBtn.innerText = state.showArchived ? "Pokaż Aktywne" : "Pokaż Archiwum";
-
-    const filtered = c.filter(x => state.showArchived ? x.archived : !x.archived);
-    const proc = filtered.map(x=>{ const d=new Date(x.date); d.setDate(d.getDate()+30); return {...x, dl:d, left:Math.ceil((d-new Date())/86400000)}; });
-    
-    if(state.trackerSort === 'deadline') proc.sort((a,b)=>a.left-b.left);
-    else if(state.trackerSort === 'added') proc.sort((a,b)=>new Date(b.date) - new Date(a.date));
-    else if(state.trackerSort === 'no') proc.sort((a,b)=>a.no.localeCompare(b.no));
-
-    if(proc.length === 0) {
-        l.innerHTML = `<div class="text-center text-slate-400 mt-10">Brak ${state.showArchived ? 'zarchiwizowanych' : 'aktywnych'} spraw.</div>`;
-        return;
+    async function getDB() {
+        if (!state.db) await initDB();
+        return state.db;
     }
 
-    proc.forEach(x=>{
-        let cl="bg-green-100 border-green-300 text-green-900"; 
-        if(x.left<8) cl="bg-yellow-100 border-yellow-300 text-yellow-900"; 
-        if(x.left<2) cl="bg-red-100 border-red-300 text-red-900";
-        if(x.archived) cl="bg-slate-100 border-slate-300 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"; 
+    async function getAllCases() {
+        const db = await getDB();
+        return db.transaction(STORE_NAME).store.getAll();
+    }
 
-        const d=document.createElement('div'); 
-        d.className=`p-3 mb-2 rounded border-l-4 ${cl} flex justify-between items-start text-xs relative group transition-all`;
-        
-        const details = `
-            <div class="font-bold text-sm flex items-center gap-2">
-                ${x.no} 
-                <span class="font-normal text-slate-500 text-[10px] bg-white/50 px-1.5 rounded">UNP: ${x.unp||'-'}</span>
-            </div>
-            <div class="font-bold text-slate-600 dark:text-slate-300 mt-1">${x.debtor || 'Brak zobowiązanego'}</div>
-            <div class="italic text-slate-500 mt-0.5">${x.note || ''}</div>
-            <div class="opacity-75 mt-1 text-[10px]">Termin mija: ${x.dl.toISOString().slice(0,10)}</div>
-        `;
+    async function getCase(id) {
+        const db = await getDB();
+        return db.transaction(STORE_NAME).store.get(id);
+    }
 
-        const favClass = x.favorite ? 'text-red-500 fill-red-500' : 'text-slate-400 hover:text-red-400';
-        const archiveIcon = x.archived ? 'refresh-ccw' : 'archive';
+    async function saveCaseToDB(caseData) {
+        const db = await getDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        await tx.store.put(caseData);
+        await tx.done;
+        return caseData;
+    }
+
+    async function deleteCaseFromDB(id) {
+        const db = await getDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        await tx.store.delete(id);
+        await tx.done;
+    }
+
+    function createCaseBinder(caseData) {
+        const statusLabels = { new: 'Nowa', 'in-progress': 'W toku', finished: 'Zakończona' };
         
-        d.innerHTML=`
-            <div class="flex-1">${details}</div>
-            <div class="text-right font-bold ml-2 whitespace-nowrap flex flex-col items-end gap-1">
-                <span>${x.left} dni</span>
-                <div class="flex gap-1 mt-1 bg-white/50 dark:bg-black/20 p-1 rounded-lg backdrop-blur-sm">
-                    <button onclick="downloadICS('${x.no} - ${x.debtor}', '${x.dl.toISOString().slice(0,10)}', '${x.note||''} UNP:${x.unp}')" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-all" title="Dodaj do Kalendarza Outlook/Google">
-                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
-                    </button>
-                    <div class="w-px bg-slate-300 mx-1"></div>
-                    <button onclick="toggleFavorite('case', ${x.id})" class="p-1.5 hover:bg-white rounded transition-all"><i data-lucide="heart" class="w-4 h-4 ${favClass} ${x.favorite?'fill-red-500':''}"></i></button>
-                    <button onclick="editTr(${x.id})" class="p-1.5 text-indigo-400 hover:text-indigo-600 hover:bg-white rounded transition-all"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                    <button onclick="toggleArchiveTr(${x.id})" class="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-white rounded transition-all"><i data-lucide="${archiveIcon}" class="w-4 h-4"></i></button>
-                    <button onclick="delTr(${x.id})" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        const urgentStyle = caseData.urgent ? 'border-red-200 dark:border-red-700' : 'border-slate-200 dark:border-slate-700';
+        
+        const daysRemaining = Math.ceil((new Date(caseData.date) - new Date()) / (1000 * 60 * 60 * 24));
+        let deadlineText = '';
+        if (daysRemaining < 0) deadlineText = `<span class="font-bold text-red-500">${Math.abs(daysRemaining)} dni po terminie</span>`;
+        else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
+        else deadlineText = `${daysRemaining} dni`;
+
+        const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+
+        return `
+            <div
+                class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all"
+            >
+                <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
+                    <div class="flex items-center gap-3">
+                        <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
+                        <div class="text-xs text-slate-400 font-mono">${caseData.unp || ''}</div>
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
                 </div>
-            </div>`;
-        l.appendChild(d);
-    });
-    lucide.createIcons();
-}
-
-async function toggleArchiveCase(id) {
-    const item = await state.db.get('cases', id);
-    if(item) {
-        item.archived = !item.archived;
-        await state.db.put('cases', item);
-        renderFullTracker();
-        if(window.checkNotifications) window.checkNotifications();
+                <div class="flex items-center gap-4 text-xs text-right ml-4">
+                    <div class="w-24">
+                        <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
+                        <div class="text-[10px] text-slate-400">${deadlineText}</div>
+                    </div>
+                    <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status]}</div>
+                    ${favoriteIcon}
+                </div>
+            </div>
+        `;
     }
-}
 
-async function deleteCase(i) {
-    if(confirm("Usunąć?")) {
-        await state.db.delete('cases',i);
-        renderFullTracker();
-        if(window.checkNotifications) window.checkNotifications();
-        renderCalendar();
-        if(window.renderDashboardWidgets) window.renderDashboardWidgets();
+    function renderFullTracker(filter = '') {
+        const listEl = document.getElementById('tracker-list');
+        const countEl = document.getElementById('tracker-case-count');
+        if (!listEl || !countEl) return;
+
+        const filteredCases = cases.filter(c => {
+            return c.archived === isArchivedView;
+        }).filter(c => {
+            if (!filter) return true;
+            const searchTerm = filter.toLowerCase();
+            return Object.values(c).some(val =>
+                String(val).toLowerCase().includes(searchTerm)
+            );
+        });
+
+        const sortMethod = document.getElementById('trSort').value;
+        filteredCases.sort((a, b) => {
+            if (a.urgent !== b.urgent) return b.urgent - a.urgent; // Urgent cases first
+            switch (sortMethod) {
+                case 'deadline': return new Date(a.date) - new Date(b.date);
+                case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
+                case 'no': return a.no.localeCompare(b.no);
+                default: return 0;
+            }
+        });
+        
+        listEl.innerHTML = filteredCases.length ? filteredCases.map(createCaseBinder).join('') : '<div class="text-center text-slate-400 py-10">Brak spraw.</div>';
+        countEl.textContent = `${filteredCases.length} spraw`;
+        lucide.createIcons();
     }
-}
 
-// Calendar Logic
-function changeMonth(d) {
-    state.currentMonth += d;
-    if(state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
-    if(state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
-    renderCalendar();
-}
+    function openCase(id) {
+        currentCaseId = id;
+        const caseData = cases.find(c => c.id === id);
+        if (!caseData) return;
 
-async function renderCalendar() {
-    const m = state.currentMonth, y = state.currentYear;
-    const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
-    const elMonth = document.getElementById('calendarMonth');
-    if(elMonth) elMonth.innerText = `${monthNames[m]} ${y}`;
+        document.getElementById('trNo').value = caseData.no;
+        document.getElementById('trUnp').value = caseData.unp;
+        document.getElementById('trDebtor').value = caseData.debtor;
+        document.getElementById('trDate').value = caseData.date;
+        document.getElementById('trStatus').value = caseData.status;
+        document.getElementById('trUrgent').checked = caseData.urgent;
+        document.getElementById('trNote').value = caseData.note;
+        document.getElementById('tracker-case-label').textContent = `Edycja: ${caseData.no}`;
 
-    const grid = document.getElementById('calendarGrid');
-    if(!grid) return;
-    grid.innerHTML = '';
+        document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
+    }
 
-    const firstDay = new Date(y, m, 1).getDay(); 
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    async function toggleFavorite(caseId) {
+        const caseData = cases.find(c => c.id === caseId);
+        if (caseData) {
+            caseData.isFavorite = !caseData.isFavorite;
+            await saveCaseToDB(caseData);
+            renderFullTracker(); // Re-render to show favorite status
+            // Optionally, update favorites popover if it's open
+        }
+    }
+
+    async function getNextCaseNumber() {
+        const allCases = await getAllCases();
+        const year = new Date().getFullYear().toString().slice(-2);
+        const prefix1 = `1228-SEE-7/${year}`;
+        const prefix2 = `1228-25-${year}`;
+
+        let maxNum1 = 0;
+        let maxNum2 = 0;
+
+        allCases.forEach(c => {
+            if (c.no.startsWith(prefix1)) {
+                const num = parseInt(c.no.split('-').pop(), 10);
+                if (num > maxNum1) maxNum1 = num;
+            } else if (c.no.startsWith(prefix2)) {
+                const num = parseInt(c.no.split('-').pop(), 10);
+                if (num > maxNum2) maxNum2 = num;
+            }
+        });
+
+        // Default to the most common prefix
+        return `${prefix1}-${maxNum1 + 1}`;
+    }
+
+    function closeCase() {
+        currentCaseId = null;
+        document.getElementById('tracker-grid-view').classList.remove('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.add('translate-x-full');
+    }
+
+    async function saveCase() {
+        const status = document.getElementById('trStatus').value;
+        const caseData = {
+            id: currentCaseId,
+            no: document.getElementById('trNo').value.trim(),
+            unp: document.getElementById('trUnp').value.trim(),
+            debtor: document.getElementById('trDebtor').value.trim(),
+            date: document.getElementById('trDate').value,
+            status: status,
+            urgent: document.getElementById('trUrgent').checked,
+            note: document.getElementById('trNote').value.trim(),
+            archived: status === 'finished',
+        };
+
+        if (!caseData.no || !caseData.date) {
+            alert('Numer sprawy i data są wymagane.');
+            return;
+        }
+
+        if (currentCaseId) {
+            const existingCase = cases.find(c => c.id === currentCaseId);
+            caseData.createdAt = existingCase.createdAt;
+        } else {
+            caseData.id = Date.now();
+            caseData.createdAt = new Date().toISOString();
+        }
+
+        await saveCaseToDB(caseData);
+
+        closeCase();
+        await loadCases();
+
+        // Po załadowaniu danych sprawdzamy powiadomienia i widżety
+        if (typeof checkNotifications === 'function') {
+            checkNotifications();
+        }
+        if (typeof renderDashboardWidgets === 'function') {
+            renderDashboardWidgets();
+        }
+    }
     
-    let startOffset = firstDay - 1;
-    if(startOffset < 0) startOffset = 6;
+    async function addNewCase() {
+        currentCaseId = null;
+        const nextCaseNumber = await getNextCaseNumber();
+        const caseNoInput = document.getElementById('trNo');
+        caseNoInput.value = nextCaseNumber;
 
-    ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'].forEach(d => {
-        const h = document.createElement('div'); h.className = "text-[10px] font-bold text-slate-400 uppercase mb-1"; h.innerText = d;
-        grid.appendChild(h);
-    });
+        caseNoInput.ondblclick = async () => {
+            const allCases = await getAllCases();
+            const year = new Date().getFullYear().toString().slice(-2);
+            const prefix2 = `1228-25-${year}`;
+            let maxNum2 = 0;
+            allCases.forEach(c => {
+                if (c.no.startsWith(prefix2)) {
+                    const num = parseInt(c.no.split('-').pop(), 10);
+                    if (num > maxNum2) maxNum2 = num;
+                }
+            });
+            caseNoInput.value = `${prefix2}-${maxNum2 + 1}`;
+        };
 
-    for(let i=0; i<startOffset; i++) {
-        const d = document.createElement('div'); d.className = "calendar-day other-month";
-        grid.appendChild(d);
+        document.getElementById('trUnp').value = '';
+        document.getElementById('trDebtor').value = '';
+        document.getElementById('trDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('trStatus').value = 'new';
+        document.getElementById('trUrgent').checked = false;
+        document.getElementById('trNote').value = '';
+        document.getElementById('tracker-case-label').textContent = 'Nowa Sprawa';
+
+        document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
     }
 
-    const cases = await state.db.getAll('cases');
-    const reminders = await state.db.getAll('reminders');
-    const today = new Date();
-
-    for(let i=1; i<=daysInMonth; i++) {
-        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-        
-        const targetEntryDate = new Date(dateStr); targetEntryDate.setDate(targetEntryDate.getDate() - 30);
-        const targetEntryStr = targetEntryDate.toISOString().slice(0,10);
-        
-        const expiringCases = cases.filter(c => c.date === targetEntryStr);
-        const dayReminders = reminders.filter(r => r.date === dateStr);
-        
-        const d = document.createElement('div');
-        d.className = "calendar-day dark:text-slate-200";
-        if(today.getDate()===i && today.getMonth()===m && today.getFullYear()===y) d.classList.add('today');
-        
-        d.innerHTML = `<span>${i}</span>`;
-        
-        if(expiringCases.length > 0) d.innerHTML += `<div class="calendar-dot bg-red-500" title="${expiringCases.length} terminów mija"></div>`;
-        if(dayReminders.length > 0) d.innerHTML += `<div class="calendar-dot bg-indigo-500" title="${dayReminders.length} przypomnień"></div>`;
-
-        d.onclick = () => openReminderModal(dateStr);
-        grid.appendChild(d);
+    function showArchived(show) {
+        isArchivedView = show;
+        const archiveBtn = document.getElementById('archiveBtn');
+        if (show) {
+            archiveBtn.textContent = 'Aktywne';
+            archiveBtn.onclick = () => showArchived(false);
+        } else {
+            archiveBtn.textContent = 'Archiwum';
+            archiveBtn.onclick = () => showArchived(true);
+        }
+        renderFullTracker();
     }
-}
 
-function openReminderModal(date) {
-    document.getElementById('reminderDateInput').value = date;
-    document.getElementById('reminderDateDisplay').innerText = date;
-    document.getElementById('reminderText').value = '';
-    document.getElementById('reminderModal').classList.remove('hidden');
-}
+    function openReminderModal(date) {
+        document.getElementById('reminderDateInput').value = date;
+        document.getElementById('reminderDateDisplay').textContent = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('reminderModal').classList.remove('hidden');
+    }
 
-function closeReminderModal() { document.getElementById('reminderModal').classList.add('hidden'); }
+    function closeReminderModal() {
+        document.getElementById('reminderModal').classList.add('hidden');
+    }
 
-async function saveReminder() {
-    const date = document.getElementById('reminderDateInput').value;
-    const text = document.getElementById('reminderText').value;
-    if(date && text) {
-        await state.db.add('reminders', {date, text});
+    function renderCalendar() {
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calendarMonthEl = document.getElementById('calendarMonth');
+        if (!calendarGrid || !calendarMonthEl) return;
+
+        calendarGrid.innerHTML = '';
+        calendarMonthEl.textContent = currentDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        const daysInMonth = lastDay.getDate();
+        let startDay = firstDay.getDay();
+        startDay = (startDay === 0) ? 6 : startDay - 1;
+
+        ['PN', 'WT', 'ŚR', 'CZ', 'PT', 'SB', 'ND'].forEach(day => {
+            calendarGrid.innerHTML += `<div class="font-bold text-slate-400">${day}</div>`;
+        });
+        
+        for (let i = 0; i < startDay; i++) calendarGrid.innerHTML += '<div></div>';
+
+        const reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayEl = document.createElement('div');
+            dayEl.textContent = i;
+            dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative';
+
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            dayEl.onclick = () => openReminderModal(dateStr);
+
+            const today = new Date();
+            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                dayEl.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+            }
+
+            const casesOnDay = cases.filter(c => {
+                const caseDate = new Date(c.date);
+                return caseDate.getDate() === i && caseDate.getMonth() === month && caseDate.getFullYear() === year;
+            });
+
+            if (casesOnDay.length) {
+                const dot = document.createElement('div');
+                dot.className = 'absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full';
+                dot.classList.add(caseData.urgent ? 'bg-red-500' : 'bg-blue-500');
+                dayEl.appendChild(dot);
+            }
+
+            if (reminders[dateStr]) {
+                const reminderDot = document.createElement('div');
+                reminderDot.className = 'absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-green-500';
+                dayEl.appendChild(reminderDot);
+            }
+
+            calendarGrid.appendChild(dayEl);
+        }
+    }
+
+    async function saveReminder() {
+        const date = document.getElementById('reminderDateInput').value;
+        const text = document.getElementById('reminderText').value.trim();
+        if (!text) return;
+
+        let reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        if (!reminders[date]) reminders[date] = [];
+        reminders[date].push(text);
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+
         closeReminderModal();
         renderCalendar();
-        if(window.checkNotifications) window.checkNotifications();
     }
-}
+
+    function changeMonth(offset) {
+        currentDate.setMonth(currentDate.getMonth() + offset);
+        renderCalendar();
+    }
+
+    async function loadCases() {
+        cases = await getAllCases();
+        renderFullTracker();
+        renderCalendar();
+    }
+
+    async function initTracker() {
+        await loadCases();
+        document.getElementById('trSort').addEventListener('change', () => renderFullTracker());
+        document.getElementById('trackerSearch').addEventListener('input', (e) => renderFullTracker(e.target.value));
+        document.getElementById('save-case-btn').addEventListener('click', saveCase);
+        showArchived(false); // Reset to default view
+    }
+
+    return {
+        initTracker,
+        openCase,
+        closeCase,
+        saveCase,
+        addNewCase,
+        showArchived,
+        changeMonth,
+        renderFullTracker,
+        toggleFavorite,
+        openReminderModal,
+        closeReminderModal,
+        saveReminder,
+    };
+})();

@@ -1,145 +1,39 @@
-// --- NOTIFICATIONS ---
-
 async function checkNotifications() {
-    const cases = await state.db.getAll('cases');
-    const reminders = await state.db.getAll('reminders');
-    const today = new Date().toISOString().slice(0,10);
-    const now = new Date();
+    const notifList = document.getElementById('notifList');
+    const notifBadge = document.getElementById('notifBadge');
+    if (!notifList || !notifBadge) return;
 
-    let notifs = [];
+    const db = await idb.openDB('EgzeBiurkoDB', 1);
+    const cases = await db.getAll('tracker');
 
-    // 1. Cases expiring in < 3 days
-    cases.filter(c => !c.archived).forEach(c => {
-        const d = new Date(c.date); d.setDate(d.getDate()+30);
-        const daysLeft = Math.ceil((d - now) / 86400000);
-        if(daysLeft <= 3 && daysLeft >= 0) {
-            notifs.push({type: 'alert-triangle', color: 'red', text: `Sprawa ${c.no} - termin mija za ${daysLeft} dni!`, action: ()=>goToModule('tracker')});
-        }
+    const upcomingCases = cases.filter(c => {
+        const aWeekFromNow = new Date();
+        aWeekFromNow.setDate(aWeekFromNow.getDate() + 7);
+        const caseDate = new Date(c.date);
+        return !c.archived && caseDate > new Date() && caseDate <= aWeekFromNow;
     });
 
-    // 2. Reminders for today
-    reminders.forEach(r => {
-        if(r.date === today) {
-            notifs.push({type: 'bell', color: 'indigo', text: `Przypomnienie: ${r.text}`, action: ()=>goToModule('tracker')});
-        }
+    const urgentAlerts = upcomingCases.filter(c => c.urgent);
+    const deadlineAlerts = upcomingCases.filter(c => {
+        const caseDate = new Date(c.date);
+        const today = new Date();
+        const diffDays = Math.ceil((caseDate - today) / (1000 * 60 * 60 * 24));
+        return diffDays === 7 || diffDays === 3;
     });
 
-    // Render Badge
-    const badge = document.getElementById('notifBadge');
-    if(notifs.length > 0) {
-        badge.innerText = notifs.length;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
-    }
-
-    // Render List
-    const list = document.getElementById('notifList');
-    list.innerHTML = '';
-    if(notifs.length === 0) {
-        list.innerHTML = '<div class="text-center p-4 text-slate-400 text-xs">Brak nowych powiadomień.</div>';
-    } else {
-        notifs.forEach(n => {
-            const div = document.createElement('div');
-            div.className = "p-3 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex gap-3 items-start";
-            div.innerHTML = `
-                <div class="text-${n.color}-500 mt-0.5"><i data-lucide="${n.type}" size="16"></i></div>
-                <div class="text-xs text-slate-600 dark:text-slate-300 font-medium">${n.text}</div>
-            `;
-            div.onclick = n.action;
-            list.appendChild(div);
-        });
-        lucide.createIcons();
-    }
-}
-
-function toggleNotifications() {
-    const p = document.getElementById('notifPopover');
-    p.classList.toggle('hidden');
-    document.getElementById('favPopover').classList.add('hidden');
-    checkNotifications();
-}
-
-function toggleFavorites() {
-    const p = document.getElementById('favPopover');
-    p.classList.toggle('hidden');
-    document.getElementById('notifPopover').classList.add('hidden');
-    loadFavoritesList();
-}
-
-async function loadFavoritesList() {
-    const l = document.getElementById('favList');
-    l.innerHTML = '';
+    // Combine and remove duplicates
+    const allAlerts = [...new Map([...urgentAlerts, ...deadlineAlerts].map(item => [item.id, item])).values()];
     
-    const cases = await state.db.getAll('cases');
-    const cars = await state.db.getAll('garage');
-    const links = JSON.parse(localStorage.getItem('lex_links') || '[]');
-
-    const favs = [
-        ...cases.filter(x=>x.favorite).map(x=>({...x, _type:'case', title: x.no, sub: x.debtor})),
-        ...cars.filter(x=>x.favorite).map(x=>({...x, _type:'car', title: x.name, sub: x.date})),
-        ...links.filter(x=>x.favorite).map(x=>({...x, _type:'link', title: x.name, sub: 'Link'}))
-    ];
-
-    if(favs.length === 0) {
-        l.innerHTML = '<div class="text-center p-4 text-slate-400 text-xs">Pusto w teczce.</div>';
-        return;
-    }
-
-    favs.forEach(f => {
-        const div = document.createElement('div');
-        div.className = "p-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-3 border-b dark:border-slate-700 last:border-0";
-        let icon = 'help-circle';
-        if(f._type === 'case') icon = 'calendar-clock';
-        if(f._type === 'car') icon = 'car';
-        if(f._type === 'link') icon = 'link';
-
-        div.innerHTML = `
-            <div class="text-indigo-500"><i data-lucide="${icon}" size="14"></i></div>
-            <div class="overflow-hidden">
-                <div class="font-bold text-xs text-slate-700 dark:text-slate-200 truncate">${f.title}</div>
-                <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${f.sub}</div>
+    if (allAlerts.length > 0) {
+        notifBadge.textContent = allAlerts.length;
+        notifBadge.classList.remove('hidden');
+        notifList.innerHTML = allAlerts.map(c => `
+            <div class="p-2 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs">
+                <span class="font-bold">${c.no}</span> - termin za ${Math.ceil((new Date(c.date) - new Date()) / (1000 * 60 * 60 * 24))} dni.
             </div>
-        `;
-        div.onclick = () => {
-             if(f._type === 'case') goToModule('tracker');
-             if(f._type === 'car') goToModule('cars');
-             if(f._type === 'link') window.open(f.url);
-             toggleFavorites();
-        };
-        l.appendChild(div);
-    });
-    lucide.createIcons();
+        `).join('');
+    } else {
+        notifBadge.classList.add('hidden');
+        notifList.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Brak powiadomień.</div>';
+    }
 }
-
-async function toggleFavorite(type, id) {
-    if(type === 'case') {
-        const item = await state.db.get('cases', id);
-        item.favorite = !item.favorite;
-        await state.db.put('cases', item);
-        if(window.renderFullTracker) window.renderFullTracker();
-    }
-    if(type === 'car') {
-        const item = await state.db.get('garage', id);
-        item.favorite = !item.favorite;
-        await state.db.put('garage', item);
-        if(window.loadGarage) window.loadGarage();
-    }
-    if(type === 'link') {
-        // Links are in localStorage, id is index
-        const links = JSON.parse(localStorage.getItem('lex_links') || '[]');
-        if(links[id]) {
-            links[id].favorite = !links[id].favorite;
-            localStorage.setItem('lex_links', JSON.stringify(links));
-            if(window.renderLinksList) window.renderLinksList();
-        }
-    }
-    // Update Widgets
-    if(window.renderDashboardWidgets) window.renderDashboardWidgets();
-}
-
-// Make toggleFavorite global as it is used in HTML onclicks
-window.toggleFavorite = toggleFavorite;
-window.toggleLinkFavorite = (id) => toggleFavorite('link', id);
-window.toggleNotifications = toggleNotifications;
-window.toggleFavorites = toggleFavorites;

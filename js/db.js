@@ -5,8 +5,8 @@
 
 async function initDB() {
     state.db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION, {
-        upgrade(db) {
-            if (!db.objectStoreNames.contains('cases')) db.createObjectStore('cases', { keyPath: 'id', autoIncrement: true });
+        upgrade(db, oldVersion, newVersion, tx) {
+            // Standard object stores
             if (!db.objectStoreNames.contains('templates')) db.createObjectStore('templates', { keyPath: 'name' });
             if (!db.objectStoreNames.contains('drafts')) db.createObjectStore('drafts', { keyPath: 'id', autoIncrement: true });
             if (!db.objectStoreNames.contains('garage')) db.createObjectStore('garage', { keyPath: 'id', autoIncrement: true });
@@ -15,6 +15,28 @@ async function initDB() {
             if (!db.objectStoreNames.contains('pdfs')) db.createObjectStore('pdfs', { keyPath: 'name' });
             if (!db.objectStoreNames.contains('reminders')) db.createObjectStore('reminders', { keyPath: 'id', autoIncrement: true });
             if (!db.objectStoreNames.contains('terrain_cases')) db.createObjectStore('terrain_cases', { keyPath: 'id', autoIncrement: true });
+
+            // Migration from 'cases' to 'tracker'
+            if (oldVersion < 5) {
+                if (!db.objectStoreNames.contains('tracker')) {
+                    db.createObjectStore('tracker', { keyPath: 'id', autoIncrement: true });
+                }
+                if (db.objectStoreNames.contains('cases')) {
+                    const casesStore = tx.objectStore('cases');
+                    const trackerStore = tx.objectStore('tracker');
+
+                    casesStore.getAll().then(cases => {
+                        for (const caseItem of cases) {
+                            // Ensure new fields have default values
+                            caseItem.urgent = caseItem.urgent || false;
+                            caseItem.isFavorite = caseItem.isFavorite || false;
+                            trackerStore.put(caseItem);
+                        }
+                    });
+
+                    db.deleteObjectStore('cases');
+                }
+            }
         }
     });
 }
@@ -22,7 +44,7 @@ async function initDB() {
 // Data Management
 async function exportData() {
     const data = {
-        cases: await state.db.getAll('cases'),
+        tracker: await state.db.getAll('tracker'),
         garage: await state.db.getAll('garage'),
         notes: await state.db.getAll('notes'),
         links: JSON.parse(localStorage.getItem('lex_links') || '[]'),
