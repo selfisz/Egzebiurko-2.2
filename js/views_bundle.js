@@ -472,17 +472,13 @@ window.APP_VIEWS = {
             <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
                 <div class="flex items-center gap-2">
-                    <div class="relative">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
-                        <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors">
-                    </div>
                     <div class="text-xs font-bold text-slate-500" id="tracker-case-count">Ładuję...</div>
                     <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
                     <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
                     <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
                 </div>
             </div>
-            <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">
+            <div id="tracker-list" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 overflow-y-auto custom-scroll content-start">
                 <!-- Case binders will be injected here -->
             </div>
         </div>

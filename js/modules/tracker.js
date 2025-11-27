@@ -2,7 +2,7 @@
 
 let currentCaseId = null;
 let isArchivedView = false;
-let currentFilter = { date: null, sort: 'deadline', search: '' };
+let currentFilter = { date: null, sort: 'deadline' };
 
 async function initTracker() {
     await renderFullTracker();
@@ -13,15 +13,6 @@ async function initTracker() {
     if (sortSelect) {
         sortSelect.addEventListener('change', (e) => {
             currentFilter.sort = e.target.value;
-            renderFullTracker();
-        });
-    }
-    
-    // Event listener for searching
-    const searchInput = document.getElementById('trackerSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            currentFilter.search = e.target.value.toLowerCase();
             renderFullTracker();
         });
     }
@@ -63,11 +54,11 @@ async function populateCaseDetails(id) {
 
 async function addNewCase() {
     const newCase = {
-        no: '1228-SEE-7',
+        no: `KMS-${new Date().getFullYear()}/`,
         date: new Date().toISOString().slice(0, 10),
         debtor: '',
         note: '',
-        unp: '1228-25-',
+        unp: '',
         status: 'new',
         priority: 'medium',
         archived: false,
@@ -94,12 +85,6 @@ async function saveCase() {
     c.note = document.getElementById('trNote').value;
     c.lastModified = new Date().toISOString();
 
-    if (c.status === 'finished') {
-        c.archived = true;
-    } else {
-        c.archived = false;
-    }
-
     await state.db.put('cases', c);
     await renderFullTracker();
     closeCase();
@@ -112,21 +97,8 @@ async function renderFullTracker() {
     list.innerHTML = '<div class="text-slate-400 p-4">Ładuję sprawy...</div>';
 
     const allCases = await state.db.getAll('cases');
-    let filteredCases = allCases.filter(c => c.archived === isArchivedView);
+    const filteredCases = allCases.filter(c => c.archived === isArchivedView);
     
-    // Search filtering
-    if (currentFilter.search) {
-        filteredCases = filteredCases.filter(c => {
-            const searchTerm = currentFilter.search;
-            return (
-                (c.no && c.no.toLowerCase().includes(searchTerm)) ||
-                (c.unp && c.unp.toLowerCase().includes(searchTerm)) ||
-                (c.debtor && c.debtor.toLowerCase().includes(searchTerm)) ||
-                (c.note && c.note.toLowerCase().includes(searchTerm))
-            );
-        });
-    }
-
     // Date filtering
     let casesToRender = filteredCases;
     if (currentFilter.date) {
@@ -181,39 +153,31 @@ function createCaseBinder(c) {
     const priorityIcons = { 'high': 'chevrons-up', 'medium': 'equal', 'low': 'chevrons-down' };
     const priorityColors = { 'high': 'text-red-500', 'medium': 'text-slate-400', 'low': 'text-green-500' };
 
-    div.className = `relative flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer group border border-slate-200 dark:border-slate-700`;
+    div.className = `flex flex-col p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-l-4 ${borderColor} cursor-pointer transition-all group relative shadow-sm h-40 justify-between`;
     div.onclick = () => openCase(c.id);
 
-    // Simulating a binder spine
-    const binderSpine = document.createElement('div');
-    binderSpine.className = `absolute left-0 top-0 bottom-0 w-2 rounded-l-lg ${borderColor.replace('border-', 'bg-')}`;
-    div.appendChild(binderSpine);
-
-    const content = document.createElement('div');
-    content.className = "flex-1 pl-4 flex items-center justify-between";
-    content.innerHTML = `
-        <div class="flex items-center gap-4">
-            <div class="flex-shrink-0 w-12 text-center">
-                <div class="text-lg font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-slate-800 dark:text-white'}">${daysLeft}</div>
-                <div class="text-[10px] text-slate-400 uppercase">Dni</div>
+    div.innerHTML = `
+        <div>
+            <div class="flex justify-between items-start">
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColors[c.status]}">${statusText[c.status]}</span>
+                <span class="text-xs font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-slate-500'}">${c.archived ? 'Zarchiwizowano' : `${daysLeft} dni`}</span>
             </div>
-            <div class="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
-            <div>
-                 <div class="font-bold text-sm text-slate-800 dark:text-white truncate group-hover:text-indigo-600">${c.no}</div>
-                 <div class="text-xs text-slate-500 truncate">${c.debtor || 'Brak danych'}</div>
-                 <div class="text-xs text-slate-400">UNP: ${c.unp || '-'}</div>
+            <div class="mt-2">
+                <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${c.no}</div>
+                <div class="text-xs text-slate-500 truncate">${c.debtor || 'Brak danych'}</div>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-             <span class="text-[10px] px-3 py-1 rounded-full font-bold ${statusColors[c.status]}">${statusText[c.status]}</span>
-             <i data-lucide="${priorityIcons[c.priority]}" size="18" class="${priorityColors[c.priority]}"></i>
-             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                 <button onclick="event.stopPropagation(); trackerModule.deleteCase(${c.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-md"><i data-lucide="trash-2" size="16"></i></button>
-                 <button onclick="event.stopPropagation(); trackerModule.toggleArchive(${c.id})" class="p-2 text-slate-400 hover:text-amber-500 rounded-md"><i data-lucide="${c.archived ? 'unarchive' : 'archive'}" size="16"></i></button>
+        <div class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700/50">
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+                <i data-lucide="${priorityIcons[c.priority]}" size="14" class="${priorityColors[c.priority]}"></i>
+                <span>UNP: ${c.unp || '-'}</span>
+            </div>
+            <div class="flex items-center gap-1">
+                 <button onclick="event.stopPropagation(); trackerModule.deleteCase(${c.id})" class="p-1 text-slate-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" size="14"></i></button>
+                 <button onclick="event.stopPropagation(); trackerModule.toggleArchive(${c.id})" class="p-1 text-slate-400 hover:text-amber-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="${c.archived ? 'unarchive' : 'archive'}" size="14"></i></button>
             </div>
         </div>
     `;
-    div.appendChild(content);
     return div;
 }
 
