@@ -464,8 +464,7 @@ window.APP_VIEWS = {
         </div>
     </div>
 </div>`,
-    'tracker': `<div class="flex flex-col h-full gap-6 lg:flex-row">
-    <div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+    'tracker': `<div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-96 shadow-2xl animate-fade">
              <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold dark:text-white">Dodaj Przypomnienie</h3>
@@ -480,6 +479,7 @@ window.APP_VIEWS = {
             <button onclick="trackerModule.saveReminder()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors">Zapisz</button>
         </div>
     </div>
+    <div class="flex flex-col h-full gap-6 lg:flex-row">
     <!-- Main content area -->
     <div class="relative flex-1 overflow-hidden glass-panel rounded-2xl shadow-sm">
         <!-- Grid View (List of cases) -->
@@ -539,10 +539,6 @@ window.APP_VIEWS = {
                                 <option value="finished">Zakończona</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
-                        <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
-                        <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
                             <select id="trPriority" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
@@ -551,6 +547,10 @@ window.APP_VIEWS = {
                                 <option value="high">Wysoki</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
+                        <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                        <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Notatka</label>
@@ -585,6 +585,7 @@ window.APP_VIEWS = {
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </div>`,
     'terrain': `<div id="view-terrain" class="max-w-7xl mx-auto h-full flex flex-col gap-6">
