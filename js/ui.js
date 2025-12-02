@@ -49,19 +49,24 @@ async function renderFavorites() {
     const favList = document.getElementById('favList');
     if (!favList) return;
 
-    const db = await idb.openDB('EgzeBiurkoDB', 1);
-    const cases = await db.getAll('tracker');
-    const favoriteCases = cases.filter(c => c.isFavorite && !c.archived);
+    try {
+        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        const cases = await db.getAll('tracker');
+        const favoriteCases = cases.filter(c => c.isFavorite && !c.archived);
 
-    if (favoriteCases.length > 0) {
-        favList.innerHTML = favoriteCases.map(c => `
-            <div class="p-2 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs cursor-pointer" onclick="goToModule('tracker', { caseId: ${c.id} })">
-                <span class="font-bold">${c.no}</span>
-                <p class="text-slate-500 text-[10px]">${c.debtor}</p>
-            </div>
-        `).join('');
-    } else {
-        favList.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Brak ulubionych spraw.</div>';
+        if (favoriteCases.length > 0) {
+            favList.innerHTML = favoriteCases.map(c => `
+                <div class="p-2 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs cursor-pointer" onclick="goToModule('tracker', { caseId: ${c.id} })">
+                    <span class="font-bold">${c.no}</span>
+                    <p class="text-slate-500 text-[10px]">${c.debtor}</p>
+                </div>
+            `).join('');
+        } else {
+            favList.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Brak ulubionych spraw.</div>';
+        }
+    } catch (error) {
+        console.error('Favorites error:', error);
+        favList.innerHTML = '<div class="p-4 text-center text-xs text-red-400">Błąd ładowania.</div>';
     }
 }
 
@@ -72,58 +77,63 @@ async function renderDashboardWidgets() {
     const container = document.getElementById('dashboard-widgets');
     if (!container) return;
 
-    const db = await idb.openDB('EgzeBiurkoDB', 1);
-    const cases = await db.getAll('tracker');
+    try {
+        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        const cases = await db.getAll('tracker');
 
-    const urgentCases = cases.filter(c => {
-        const aWeekFromNow = new Date();
-        aWeekFromNow.setDate(aWeekFromNow.getDate() + 7);
-        const caseDate = new Date(c.date);
-        return !c.archived && c.urgent && caseDate <= aWeekFromNow && caseDate >= new Date();
-    });
+        const urgentCases = cases.filter(c => {
+            const aWeekFromNow = new Date();
+            aWeekFromNow.setDate(aWeekFromNow.getDate() + 7);
+            const caseDate = new Date(c.date);
+            return !c.archived && c.urgent && caseDate <= aWeekFromNow && caseDate >= new Date();
+        });
 
-    let urgentCasesWidget = '';
-    if (urgentCases.length > 0) {
-        urgentCasesWidget = `
-            <div class="glass-panel p-6 rounded-2xl shadow-sm">
-                <h3 class="font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2"><i data-lucide="alert-triangle"></i> Pilne Sprawy</h3>
-                <div class="space-y-3">
-                    ${urgentCases.map(c => `
-                        <div class="text-xs p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900">
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold text-red-800 dark:text-red-300">${c.no}</span>
-                                <span class="text-red-500 font-mono">${new Date(c.date).toLocaleDateString()}</span>
+        let urgentCasesWidget = '';
+        if (urgentCases.length > 0) {
+            urgentCasesWidget = `
+                <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                    <h3 class="font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2"><i data-lucide="alert-triangle"></i> Pilne Sprawy</h3>
+                    <div class="space-y-3">
+                        ${urgentCases.map(c => `
+                            <div class="text-xs p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-red-800 dark:text-red-300">${c.no}</span>
+                                    <span class="text-red-500 font-mono">${new Date(c.date).toLocaleDateString()}</span>
+                                </div>
+                                <p class="text-slate-600 dark:text-slate-400 mt-1">${c.debtor}</p>
                             </div>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">${c.debtor}</p>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
-            </div>
-        `;
-    }
-    // --- FAVORITES WIDGET ---
-    const favoriteCases = cases.filter(c => c.isFavorite && !c.archived);
-    let favoritesWidget = '';
-    if (favoriteCases.length > 0) {
-        favoritesWidget = `
-            <div class="glass-panel p-6 rounded-2xl shadow-sm">
-                <h3 class="font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2"><i data-lucide="star"></i> Teczka (Ulubione)</h3>
-                <div class="space-y-3">
-                    ${favoriteCases.slice(0, 5).map(c => `
-                        <div class="text-xs p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900 cursor-pointer hover:bg-yellow-100" onclick="goToModule('tracker', { caseId: ${c.id} })">
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold text-yellow-800 dark:text-yellow-300">${c.no}</span>
+            `;
+        }
+        // --- FAVORITES WIDGET ---
+        const favoriteCases = cases.filter(c => c.isFavorite && !c.archived);
+        let favoritesWidget = '';
+        if (favoriteCases.length > 0) {
+            favoritesWidget = `
+                <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                    <h3 class="font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2"><i data-lucide="star"></i> Teczka (Ulubione)</h3>
+                    <div class="space-y-3">
+                        ${favoriteCases.slice(0, 5).map(c => `
+                            <div class="text-xs p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900 cursor-pointer hover:bg-yellow-100" onclick="goToModule('tracker', { caseId: ${c.id} })">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-yellow-800 dark:text-yellow-300">${c.no}</span>
+                                </div>
+                                <p class="text-slate-600 dark:text-slate-400 mt-1">${c.debtor}</p>
                             </div>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">${c.debtor}</p>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
-            </div>
-        `;
-    }
+            `;
+        }
 
-    container.innerHTML = urgentCasesWidget + favoritesWidget;
-    lucide.createIcons();
+        container.innerHTML = urgentCasesWidget + favoritesWidget;
+        lucide.createIcons();
+    } catch (error) {
+        console.error('Dashboard widgets error:', error);
+        container.innerHTML = '<div class="glass-panel p-6 rounded-2xl shadow-sm text-center text-red-400">Błąd ładowania widgetów.</div>';
+    }
 }
 
 // --- NAVIGATION FUNCTIONS ---
@@ -172,7 +182,7 @@ async function runGlobalSearch(query) {
     let results = [];
     
     try {
-        const db = await idb.openDB('EgzeBiurkoDB', 5);
+        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
         
         // Search in tracker (cases)
         if (db.objectStoreNames.contains('tracker')) {

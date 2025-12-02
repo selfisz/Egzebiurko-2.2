@@ -265,12 +265,20 @@ const trackerModule = (() => {
     async function saveReminder() {
         const date = document.getElementById('reminderDateInput').value;
         const text = document.getElementById('reminderText').value.trim();
-        if (!text) return;
+        if (!text) {
+            alert('Proszę wpisać treść przypomnienia.');
+            return;
+        }
+        if (!date) {
+            alert('Proszę wybrać datę.');
+            return;
+        }
 
         let reminders = {};
         try {
             reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
         } catch (e) {
+            console.error('Error parsing reminders:', e);
             reminders = {};
         }
         
@@ -278,6 +286,7 @@ const trackerModule = (() => {
         reminders[date].push(text);
         localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
 
+        document.getElementById('reminderText').value = '';
         closeReminderModal();
         renderCalendar();
     }
@@ -403,3 +412,8 @@ const trackerModule = (() => {
 
 // Expose to window for onclick handlers
 window.trackerModule = trackerModule;
+
+// Expose individual functions for global access
+window.openReminderModal = trackerModule.openReminderModal;
+window.closeReminderModal = trackerModule.closeReminderModal;
+window.saveReminder = trackerModule.saveReminder;
