@@ -314,6 +314,71 @@ const trackerModule = (() => {
 
             calendarGrid.appendChild(dayEl);
         }
+function showArchived(show) {
+    isArchivedView = show;
+    const btn = document.getElementById('archiveBtn');
+    if (show) {
+        btn.innerText = 'Aktywne';
+        btn.onclick = () => showArchived(false);
+    } else {
+        btn.innerText = 'Archiwum';
+        btn.onclick = () => showArchived(true);
+    }
+    renderFullTracker();
+}
+
+// Calendar Logic
+function changeMonth(d) {
+    state.currentMonth += d;
+    if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
+    if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
+    renderCalendar();
+}
+
+async function renderCalendar() {
+    const m = state.currentMonth, y = state.currentYear;
+    const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+    const elMonth = document.getElementById('calendarMonth');
+    if (elMonth) elMonth.innerText = `${monthNames[m]} ${y}`;
+
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    let startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+    ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'].forEach(d => {
+        const h = document.createElement('div');
+        h.className = "text-[10px] font-bold text-slate-400 uppercase mb-1";
+        h.innerText = d;
+        grid.appendChild(h);
+    });
+
+    for (let i = 0; i < startOffset; i++) grid.appendChild(document.createElement('div'));
+
+    const cases = await state.db.getAll('cases');
+    const today = new Date();
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const expiringCases = cases.filter(c => {
+            const deadline = new Date(c.date);
+            deadline.setDate(deadline.getDate() + 30);
+            return deadline.toISOString().slice(0, 10) === dateStr && !c.archived;
+        });
+
+        const d = document.createElement('div');
+        d.className = "calendar-day dark:text-slate-200 p-1 flex items-center justify-center cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-full transition-colors relative aspect-square";
+        if (today.getDate() === i && today.getMonth() === m && today.getFullYear() === y) d.classList.add('bg-indigo-500', 'text-white', 'font-bold');
+        if (currentFilter.date === dateStr) d.classList.add('ring-2', 'ring-indigo-500');
+
+        d.innerHTML = `<span>${i}</span>`;
+        if (expiringCases.length > 0) d.innerHTML += `<div class="absolute bottom-0 w-1.5 h-1.5 bg-red-500 rounded-full"></div>`;
+
+        d.onclick = () => filterByDate(dateStr);
+        grid.appendChild(d);
     }
 
     async function saveReminder() {
@@ -364,3 +429,26 @@ const trackerModule = (() => {
         saveReminder,
     };
 })();
+function filterByDate(dateStr) {
+    if (currentFilter.date === dateStr) {
+        currentFilter.date = null; // Toggle off
+    } else {
+        currentFilter.date = dateStr;
+    }
+    renderCalendar();
+    renderFullTracker();
+}
+
+
+// --- MODULE EXPORT ---
+window.trackerModule = {
+    initTracker,
+    addNewCase,
+    openCase,
+    closeCase,
+    saveCase,
+    deleteCase,
+    toggleArchive,
+    showArchived,
+    changeMonth
+};

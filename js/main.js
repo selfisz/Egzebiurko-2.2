@@ -6,6 +6,10 @@ function handleRouteChange() {
     // If hash is empty or just '#', default to 'dashboard'
     const moduleName = hash || 'dashboard';
     goToModule(moduleName);
+
+    // Always check notifications and widgets on route change
+    if (typeof checkNotifications === 'function') checkNotifications();
+    if (typeof renderDashboardWidgets === 'function') renderDashboardWidgets();
 }
 
 // --- INITIALIZATION ---

@@ -65,6 +65,9 @@ async function renderFavorites() {
     }
 }
 
+
+
+// --- DASHBOARD WIDGETS ---
 async function renderDashboardWidgets() {
     const container = document.getElementById('dashboard-widgets');
     if (!container) return;
@@ -121,4 +124,46 @@ async function renderDashboardWidgets() {
 
     container.innerHTML = urgentCasesWidget + favoritesWidget;
     lucide.createIcons();
+    // --- URGENT CASES WIDGET ---
+    const cases = await state.db.getAll('cases');
+    const now = new Date();
+    const urgentCases = cases
+        .filter(c => !c.archived && c.priority === 'high')
+        .map(c => {
+            const d = new Date(c.date);
+            d.setDate(d.getDate() + 30);
+            return { ...c, daysLeft: Math.ceil((d - now) / 86400000) };
+        })
+        .filter(c => c.daysLeft >= 0)
+        .sort((a, b) => a.daysLeft - b.daysLeft)
+        .slice(0, 5); // Limit to top 5
+
+    let widgetHTML = `
+        <div class="glass-panel p-6 rounded-2xl shadow-sm">
+            <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase mb-4">
+                <i data-lucide="alert-triangle" class="text-red-500"></i> Pilne Sprawy
+            </h3>
+            <div class="space-y-3">
+    `;
+
+    if (urgentCases.length === 0) {
+        widgetHTML += `<p class="text-xs text-slate-400 text-center py-4">Brak pilnych spraw.</p>`;
+    } else {
+        urgentCases.forEach(c => {
+            widgetHTML += `
+                <div onclick="goToModule('tracker')" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 cursor-pointer">
+                    <div>
+                        <div class="font-bold text-xs text-slate-800 dark:text-white">${c.no}</div>
+                        <div class="text-[10px] text-slate-500">${c.debtor}</div>
+                    </div>
+                    <div class="text-xs font-bold text-red-500">${c.daysLeft} dni</div>
+                </div>
+            `;
+        });
+    }
+
+    widgetHTML += `</div></div>`;
+    container.innerHTML = widgetHTML;
+
+    if (window.lucide) lucide.createIcons();
 }
