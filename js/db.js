@@ -59,37 +59,54 @@ async function exportData() {
 
 async function importData(event) {
     const file = event.target.files[0];
-    if(!file) return;
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            if(confirm("To nadpisze obecne dane. Kontynuować?")) {
-                const tx = state.db.transaction(['cases', 'garage', 'notes'], 'readwrite');
+            if (confirm("To nadpisze obecne dane. Kontynuować?")) {
+                const tx = state.db.transaction(['tracker', 'garage', 'notes'], 'readwrite');
 
-                if(data.cases) { await tx.objectStore('cases').clear(); for(const i of data.cases) await tx.objectStore('cases').put(i); }
-                if(data.garage) { await tx.objectStore('garage').clear(); for(const i of data.garage) await tx.objectStore('garage').put(i); }
-                if(data.notes) { await tx.objectStore('notes').clear(); for(const i of data.notes) await tx.objectStore('notes').put(i); }
+                // Support both old 'cases' and new 'tracker' format
+                const trackerData = data.tracker || data.cases || [];
+                if (trackerData.length > 0) {
+                    await tx.objectStore('tracker').clear();
+                    for (const i of trackerData) await tx.objectStore('tracker').put(i);
+                }
+                if (data.garage) {
+                    await tx.objectStore('garage').clear();
+                    for (const i of data.garage) await tx.objectStore('garage').put(i);
+                }
+                if (data.notes) {
+                    await tx.objectStore('notes').clear();
+                    for (const i of data.notes) await tx.objectStore('notes').put(i);
+                }
 
-                if(data.links) localStorage.setItem('lex_links', JSON.stringify(data.links));
-                if(data.dicts) {
-                    localStorage.setItem('lex_addresses', JSON.stringify(data.dicts.addresses));
-                    localStorage.setItem('lex_signatures', JSON.stringify(data.dicts.signatures));
+                if (data.links) localStorage.setItem('lex_links', JSON.stringify(data.links));
+                if (data.dicts) {
+                    localStorage.setItem('lex_addresses', JSON.stringify(data.dicts.addresses || []));
+                    localStorage.setItem('lex_signatures', JSON.stringify(data.dicts.signatures || []));
                 }
 
                 alert("Przywrócono dane!");
                 location.reload();
             }
-        } catch(err) { alert("Błąd pliku: " + err.message); }
+        } catch (err) {
+            alert("Błąd pliku: " + err.message);
+        }
     };
     reader.readAsText(file);
 }
 
 async function wipeData() {
-    if(confirm("Czy na pewno usunąć WSZYSTKIE dane? Tego nie da się cofnąć!")) {
-        const stores = ['cases', 'garage', 'notes', 'templates', 'drafts', 'bailiffs', 'pdfs', 'reminders'];
+    if (confirm("Czy na pewno usunąć WSZYSTKIE dane? Tego nie da się cofnąć!")) {
+        const stores = ['tracker', 'garage', 'notes', 'templates', 'drafts', 'bailiffs', 'pdfs', 'reminders', 'terrain_cases'];
         const tx = state.db.transaction(stores, 'readwrite');
-        for(const s of stores) await tx.objectStore(s).clear();
+        for (const s of stores) {
+            if (state.db.objectStoreNames.contains(s)) {
+                await tx.objectStore(s).clear();
+            }
+        }
         localStorage.clear();
         alert("Wyczyszczono.");
         location.reload();

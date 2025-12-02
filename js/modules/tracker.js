@@ -1,8 +1,11 @@
+// --- TRACKER MODULE ---
+
 const trackerModule = (() => {
     let currentCaseId = null;
     let cases = [];
     let isArchivedView = false;
     let currentDate = new Date();
+    let currentFilter = { date: null };
     const STORE_NAME = 'tracker';
 
     async function getDB() {
@@ -13,11 +16,6 @@ const trackerModule = (() => {
     async function getAllCases() {
         const db = await getDB();
         return db.transaction(STORE_NAME).store.getAll();
-    }
-
-    async function getCase(id) {
-        const db = await getDB();
-        return db.transaction(STORE_NAME).store.get(id);
     }
 
     async function saveCaseToDB(caseData) {
@@ -37,7 +35,6 @@ const trackerModule = (() => {
 
     function createCaseBinder(caseData) {
         const statusLabels = { new: 'Nowa', 'in-progress': 'W toku', finished: 'Zakończona' };
-        
         const urgentStyle = caseData.urgent ? 'border-red-200 dark:border-red-700' : 'border-slate-200 dark:border-slate-700';
         
         const daysRemaining = Math.ceil((new Date(caseData.date) - new Date()) / (1000 * 60 * 60 * 24));
@@ -49,9 +46,7 @@ const trackerModule = (() => {
         const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
 
         return `
-            <div
-                class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all"
-            >
+            <div class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -64,7 +59,7 @@ const trackerModule = (() => {
                         <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
                     </div>
-                    <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status]}</div>
+                    <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
                     ${favoriteIcon}
                 </div>
             </div>
@@ -76,30 +71,38 @@ const trackerModule = (() => {
         const countEl = document.getElementById('tracker-case-count');
         if (!listEl || !countEl) return;
 
-        const filteredCases = cases.filter(c => {
-            return c.archived === isArchivedView;
-        }).filter(c => {
-            if (!filter) return true;
+        let filteredCases = cases.filter(c => c.archived === isArchivedView);
+        
+        // Filter by date if set
+        if (currentFilter.date) {
+            filteredCases = filteredCases.filter(c => c.date === currentFilter.date);
+        }
+        
+        // Filter by search term
+        if (filter) {
             const searchTerm = filter.toLowerCase();
-            return Object.values(c).some(val =>
-                String(val).toLowerCase().includes(searchTerm)
+            filteredCases = filteredCases.filter(c =>
+                Object.values(c).some(val => String(val).toLowerCase().includes(searchTerm))
             );
-        });
+        }
 
-        const sortMethod = document.getElementById('trSort').value;
+        const sortEl = document.getElementById('trSort');
+        const sortMethod = sortEl ? sortEl.value : 'deadline';
         filteredCases.sort((a, b) => {
-            if (a.urgent !== b.urgent) return b.urgent - a.urgent; // Urgent cases first
+            if (a.urgent !== b.urgent) return b.urgent - a.urgent;
             switch (sortMethod) {
                 case 'deadline': return new Date(a.date) - new Date(b.date);
                 case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
-                case 'no': return a.no.localeCompare(b.no);
+                case 'no': return (a.no || '').localeCompare(b.no || '');
                 default: return 0;
             }
         });
         
-        listEl.innerHTML = filteredCases.length ? filteredCases.map(createCaseBinder).join('') : '<div class="text-center text-slate-400 py-10">Brak spraw.</div>';
+        listEl.innerHTML = filteredCases.length 
+            ? filteredCases.map(createCaseBinder).join('') 
+            : '<div class="text-center text-slate-400 py-10">Brak spraw.</div>';
         countEl.textContent = `${filteredCases.length} spraw`;
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     }
 
     function openCase(id) {
@@ -107,13 +110,13 @@ const trackerModule = (() => {
         const caseData = cases.find(c => c.id === id);
         if (!caseData) return;
 
-        document.getElementById('trNo').value = caseData.no;
-        document.getElementById('trUnp').value = caseData.unp;
-        document.getElementById('trDebtor').value = caseData.debtor;
-        document.getElementById('trDate').value = caseData.date;
-        document.getElementById('trStatus').value = caseData.status;
-        document.getElementById('trUrgent').checked = caseData.urgent;
-        document.getElementById('trNote').value = caseData.note;
+        document.getElementById('trNo').value = caseData.no || '';
+        document.getElementById('trUnp').value = caseData.unp || '';
+        document.getElementById('trDebtor').value = caseData.debtor || '';
+        document.getElementById('trDate').value = caseData.date || '';
+        document.getElementById('trStatus').value = caseData.status || 'new';
+        document.getElementById('trUrgent').checked = caseData.urgent || false;
+        document.getElementById('trNote').value = caseData.note || '';
         document.getElementById('tracker-case-label').textContent = `Edycja: ${caseData.no}`;
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
@@ -125,8 +128,7 @@ const trackerModule = (() => {
         if (caseData) {
             caseData.isFavorite = !caseData.isFavorite;
             await saveCaseToDB(caseData);
-            renderFullTracker(); // Re-render to show favorite status
-            // Optionally, update favorites popover if it's open
+            renderFullTracker();
         }
     }
 
@@ -140,16 +142,15 @@ const trackerModule = (() => {
         let maxNum2 = 0;
 
         allCases.forEach(c => {
-            if (c.no.startsWith(prefix1)) {
+            if (c.no && c.no.startsWith(prefix1)) {
                 const num = parseInt(c.no.split('-').pop(), 10);
                 if (num > maxNum1) maxNum1 = num;
-            } else if (c.no.startsWith(prefix2)) {
+            } else if (c.no && c.no.startsWith(prefix2)) {
                 const num = parseInt(c.no.split('-').pop(), 10);
                 if (num > maxNum2) maxNum2 = num;
             }
         });
 
-        // Default to the most common prefix
         return `${prefix1}-${maxNum1 + 1}`;
     }
 
@@ -180,24 +181,29 @@ const trackerModule = (() => {
 
         if (currentCaseId) {
             const existingCase = cases.find(c => c.id === currentCaseId);
-            caseData.createdAt = existingCase.createdAt;
+            caseData.createdAt = existingCase ? existingCase.createdAt : new Date().toISOString();
+            caseData.isFavorite = existingCase ? existingCase.isFavorite : false;
         } else {
             caseData.id = Date.now();
             caseData.createdAt = new Date().toISOString();
+            caseData.isFavorite = false;
         }
 
         await saveCaseToDB(caseData);
-
         closeCase();
         await loadCases();
 
-        // Po załadowaniu danych sprawdzamy powiadomienia i widżety
-        if (typeof checkNotifications === 'function') {
-            checkNotifications();
-        }
-        if (typeof renderDashboardWidgets === 'function') {
-            renderDashboardWidgets();
-        }
+        if (typeof checkNotifications === 'function') checkNotifications();
+        if (typeof renderDashboardWidgets === 'function') renderDashboardWidgets();
+    }
+
+    async function deleteCase() {
+        if (!currentCaseId) return;
+        if (!confirm('Czy na pewno usunąć tę sprawę?')) return;
+        
+        await deleteCaseFromDB(currentCaseId);
+        closeCase();
+        await loadCases();
     }
     
     async function addNewCase() {
@@ -212,7 +218,7 @@ const trackerModule = (() => {
             const prefix2 = `1228-25-${year}`;
             let maxNum2 = 0;
             allCases.forEach(c => {
-                if (c.no.startsWith(prefix2)) {
+                if (c.no && c.no.startsWith(prefix2)) {
                     const num = parseInt(c.no.split('-').pop(), 10);
                     if (num > maxNum2) maxNum2 = num;
                 }
@@ -235,24 +241,45 @@ const trackerModule = (() => {
     function showArchived(show) {
         isArchivedView = show;
         const archiveBtn = document.getElementById('archiveBtn');
-        if (show) {
-            archiveBtn.textContent = 'Aktywne';
-            archiveBtn.onclick = () => showArchived(false);
-        } else {
-            archiveBtn.textContent = 'Archiwum';
-            archiveBtn.onclick = () => showArchived(true);
+        if (archiveBtn) {
+            archiveBtn.textContent = show ? 'Aktywne' : 'Archiwum';
+            archiveBtn.onclick = () => showArchived(!show);
         }
         renderFullTracker();
     }
 
     function openReminderModal(date) {
-        document.getElementById('reminderDateInput').value = date;
-        document.getElementById('reminderDateDisplay').textContent = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        document.getElementById('reminderModal').classList.remove('hidden');
+        const dateInput = document.getElementById('reminderDateInput');
+        const dateDisplay = document.getElementById('reminderDateDisplay');
+        const modal = document.getElementById('reminderModal');
+        if (dateInput) dateInput.value = date;
+        if (dateDisplay) dateDisplay.textContent = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if (modal) modal.classList.remove('hidden');
     }
 
     function closeReminderModal() {
-        document.getElementById('reminderModal').classList.add('hidden');
+        const modal = document.getElementById('reminderModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveReminder() {
+        const date = document.getElementById('reminderDateInput').value;
+        const text = document.getElementById('reminderText').value.trim();
+        if (!text) return;
+
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+        
+        if (!reminders[date]) reminders[date] = [];
+        reminders[date].push(text);
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+
+        closeReminderModal();
+        renderCalendar();
     }
 
     function renderCalendar() {
@@ -265,44 +292,48 @@ const trackerModule = (() => {
 
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
-
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-
         const daysInMonth = lastDay.getDate();
         let startDay = firstDay.getDay();
         startDay = (startDay === 0) ? 6 : startDay - 1;
 
         ['PN', 'WT', 'ŚR', 'CZ', 'PT', 'SB', 'ND'].forEach(day => {
-            calendarGrid.innerHTML += `<div class="font-bold text-slate-400">${day}</div>`;
+            calendarGrid.innerHTML += `<div class="font-bold text-slate-400 text-[10px]">${day}</div>`;
         });
         
         for (let i = 0; i < startDay; i++) calendarGrid.innerHTML += '<div></div>';
 
-        const reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+
+        const today = new Date();
 
         for (let i = 1; i <= daysInMonth; i++) {
             const dayEl = document.createElement('div');
             dayEl.textContent = i;
-            dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative';
+            dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative text-center text-sm';
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            dayEl.onclick = () => openReminderModal(dateStr);
+            dayEl.onclick = () => filterByDate(dateStr);
 
-            const today = new Date();
             if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                 dayEl.classList.add('bg-indigo-600', 'text-white', 'font-bold');
             }
 
-            const casesOnDay = cases.filter(c => {
-                const caseDate = new Date(c.date);
-                return caseDate.getDate() === i && caseDate.getMonth() === month && caseDate.getFullYear() === year;
-            });
+            if (currentFilter.date === dateStr) {
+                dayEl.classList.add('ring-2', 'ring-indigo-500');
+            }
 
-            if (casesOnDay.length) {
+            const casesOnDay = cases.filter(c => c.date === dateStr && !c.archived);
+            if (casesOnDay.length > 0) {
+                const hasUrgent = casesOnDay.some(c => c.urgent);
                 const dot = document.createElement('div');
-                dot.className = 'absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full';
-                dot.classList.add(caseData.urgent ? 'bg-red-500' : 'bg-blue-500');
+                dot.className = `absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${hasUrgent ? 'bg-red-500' : 'bg-blue-500'}`;
                 dayEl.appendChild(dot);
             }
 
@@ -314,90 +345,21 @@ const trackerModule = (() => {
 
             calendarGrid.appendChild(dayEl);
         }
-function showArchived(show) {
-    isArchivedView = show;
-    const btn = document.getElementById('archiveBtn');
-    if (show) {
-        btn.innerText = 'Aktywne';
-        btn.onclick = () => showArchived(false);
-    } else {
-        btn.innerText = 'Archiwum';
-        btn.onclick = () => showArchived(true);
-    }
-    renderFullTracker();
-}
-
-// Calendar Logic
-function changeMonth(d) {
-    state.currentMonth += d;
-    if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
-    if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
-    renderCalendar();
-}
-
-async function renderCalendar() {
-    const m = state.currentMonth, y = state.currentYear;
-    const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
-    const elMonth = document.getElementById('calendarMonth');
-    if (elMonth) elMonth.innerText = `${monthNames[m]} ${y}`;
-
-    const grid = document.getElementById('calendarGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    const firstDay = new Date(y, m, 1).getDay();
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    let startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
-    ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'].forEach(d => {
-        const h = document.createElement('div');
-        h.className = "text-[10px] font-bold text-slate-400 uppercase mb-1";
-        h.innerText = d;
-        grid.appendChild(h);
-    });
-
-    for (let i = 0; i < startOffset; i++) grid.appendChild(document.createElement('div'));
-
-    const cases = await state.db.getAll('cases');
-    const today = new Date();
-
-    for (let i = 1; i <= daysInMonth; i++) {
-        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const expiringCases = cases.filter(c => {
-            const deadline = new Date(c.date);
-            deadline.setDate(deadline.getDate() + 30);
-            return deadline.toISOString().slice(0, 10) === dateStr && !c.archived;
-        });
-
-        const d = document.createElement('div');
-        d.className = "calendar-day dark:text-slate-200 p-1 flex items-center justify-center cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-full transition-colors relative aspect-square";
-        if (today.getDate() === i && today.getMonth() === m && today.getFullYear() === y) d.classList.add('bg-indigo-500', 'text-white', 'font-bold');
-        if (currentFilter.date === dateStr) d.classList.add('ring-2', 'ring-indigo-500');
-
-        d.innerHTML = `<span>${i}</span>`;
-        if (expiringCases.length > 0) d.innerHTML += `<div class="absolute bottom-0 w-1.5 h-1.5 bg-red-500 rounded-full"></div>`;
-
-        d.onclick = () => filterByDate(dateStr);
-        grid.appendChild(d);
-    }
-
-    async function saveReminder() {
-        const date = document.getElementById('reminderDateInput').value;
-        const text = document.getElementById('reminderText').value.trim();
-        if (!text) return;
-
-        let reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        if (!reminders[date]) reminders[date] = [];
-        reminders[date].push(text);
-        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
-
-        closeReminderModal();
-        renderCalendar();
     }
 
     function changeMonth(offset) {
         currentDate.setMonth(currentDate.getMonth() + offset);
         renderCalendar();
+    }
+
+    function filterByDate(dateStr) {
+        if (currentFilter.date === dateStr) {
+            currentFilter.date = null;
+        } else {
+            currentFilter.date = dateStr;
+        }
+        renderCalendar();
+        renderFullTracker();
     }
 
     async function loadCases() {
@@ -408,17 +370,25 @@ async function renderCalendar() {
 
     async function initTracker() {
         await loadCases();
-        document.getElementById('trSort').addEventListener('change', () => renderFullTracker());
-        document.getElementById('trackerSearch').addEventListener('input', (e) => renderFullTracker(e.target.value));
-        document.getElementById('save-case-btn').addEventListener('click', saveCase);
-        showArchived(false); // Reset to default view
+        
+        const sortEl = document.getElementById('trSort');
+        const searchEl = document.getElementById('trackerSearch');
+        const saveBtn = document.getElementById('save-case-btn');
+        
+        if (sortEl) sortEl.addEventListener('change', () => renderFullTracker());
+        if (searchEl) searchEl.addEventListener('input', (e) => renderFullTracker(e.target.value));
+        if (saveBtn) saveBtn.addEventListener('click', saveCase);
+        
+        showArchived(false);
     }
 
+    // Public API
     return {
         initTracker,
         openCase,
         closeCase,
         saveCase,
+        deleteCase,
         addNewCase,
         showArchived,
         changeMonth,
@@ -427,28 +397,9 @@ async function renderCalendar() {
         openReminderModal,
         closeReminderModal,
         saveReminder,
+        filterByDate,
     };
 })();
-function filterByDate(dateStr) {
-    if (currentFilter.date === dateStr) {
-        currentFilter.date = null; // Toggle off
-    } else {
-        currentFilter.date = dateStr;
-    }
-    renderCalendar();
-    renderFullTracker();
-}
 
-
-// --- MODULE EXPORT ---
-window.trackerModule = {
-    initTracker,
-    addNewCase,
-    openCase,
-    closeCase,
-    saveCase,
-    deleteCase,
-    toggleArchive,
-    showArchived,
-    changeMonth
-};
+// Expose to window for onclick handlers
+window.trackerModule = trackerModule;

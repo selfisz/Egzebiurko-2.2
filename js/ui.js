@@ -124,46 +124,147 @@ async function renderDashboardWidgets() {
 
     container.innerHTML = urgentCasesWidget + favoritesWidget;
     lucide.createIcons();
-    // --- URGENT CASES WIDGET ---
-    const cases = await state.db.getAll('cases');
-    const now = new Date();
-    const urgentCases = cases
-        .filter(c => !c.archived && c.priority === 'high')
-        .map(c => {
-            const d = new Date(c.date);
-            d.setDate(d.getDate() + 30);
-            return { ...c, daysLeft: Math.ceil((d - now) / 86400000) };
-        })
-        .filter(c => c.daysLeft >= 0)
-        .sort((a, b) => a.daysLeft - b.daysLeft)
-        .slice(0, 5); // Limit to top 5
+}
 
-    let widgetHTML = `
-        <div class="glass-panel p-6 rounded-2xl shadow-sm">
-            <h3 class="font-bold text-slate-700 dark:text-white flex items-center gap-2 text-sm uppercase mb-4">
-                <i data-lucide="alert-triangle" class="text-red-500"></i> Pilne Sprawy
-            </h3>
-            <div class="space-y-3">
-    `;
-
-    if (urgentCases.length === 0) {
-        widgetHTML += `<p class="text-xs text-slate-400 text-center py-4">Brak pilnych spraw.</p>`;
-    } else {
-        urgentCases.forEach(c => {
-            widgetHTML += `
-                <div onclick="goToModule('tracker')" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 cursor-pointer">
-                    <div>
-                        <div class="font-bold text-xs text-slate-800 dark:text-white">${c.no}</div>
-                        <div class="text-[10px] text-slate-500">${c.debtor}</div>
-                    </div>
-                    <div class="text-xs font-bold text-red-500">${c.daysLeft} dni</div>
-                </div>
-            `;
-        });
+// --- NAVIGATION FUNCTIONS ---
+function goToModule(moduleName, options = {}) {
+    // Update URL hash
+    window.location.hash = `#${moduleName}`;
+    
+    // Update active nav state
+    document.querySelectorAll('[id^="nav-"]').forEach(btn => {
+        btn.classList.remove('bg-white/10', 'text-white');
+    });
+    
+    const activeBtn = document.getElementById(`nav-${moduleName}`);
+    if (activeBtn) {
+        activeBtn.classList.add('bg-white/10', 'text-white');
     }
+    
+    // Load the view
+    if (typeof loadView === 'function') {
+        loadView(moduleName);
+    }
+    
+    // Handle any additional options (e.g., caseId for tracker)
+    if (options.caseId && window.trackerModule && window.trackerModule.openCase) {
+        setTimeout(() => window.trackerModule.openCase(options.caseId), 100);
+    }
+}
 
-    widgetHTML += `</div></div>`;
-    container.innerHTML = widgetHTML;
+function goHome() {
+    goToModule('dashboard');
+}
 
-    if (window.lucide) lucide.createIcons();
+// --- GLOBAL SEARCH ---
+async function runGlobalSearch(query) {
+    const resultsContainer = document.getElementById('searchResults');
+    const footer = document.getElementById('searchFooter');
+    
+    if (!query || query.trim().length < 2) {
+        resultsContainer.innerHTML = '';
+        footer.classList.remove('hidden');
+        return;
+    }
+    
+    footer.classList.add('hidden');
+    const q = query.toLowerCase();
+    let results = [];
+    
+    try {
+        const db = await idb.openDB('EgzeBiurkoDB', 5);
+        
+        // Search in tracker (cases)
+        if (db.objectStoreNames.contains('tracker')) {
+            const cases = await db.getAll('tracker');
+            cases.forEach(c => {
+                if ((c.no && c.no.toLowerCase().includes(q)) || 
+                    (c.debtor && c.debtor.toLowerCase().includes(q)) || 
+                    (c.creditor && c.creditor.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Sprawa',
+                        icon: 'calendar-clock',
+                        title: c.no,
+                        subtitle: c.debtor,
+                        action: () => { toggleSearch(); goToModule('tracker'); }
+                    });
+                }
+            });
+        }
+        
+        // Search in templates
+        if (db.objectStoreNames.contains('templates')) {
+            const templates = await db.getAll('templates');
+            templates.forEach(t => {
+                if (t.name && t.name.toLowerCase().includes(q)) {
+                    results.push({
+                        type: 'Szablon',
+                        icon: 'file-text',
+                        title: t.name,
+                        subtitle: 'Generator Pism',
+                        action: () => { toggleSearch(); goToModule('generator'); }
+                    });
+                }
+            });
+        }
+        
+        // Search in garage (cars)
+        if (db.objectStoreNames.contains('garage')) {
+            const cars = await db.getAll('garage');
+            cars.forEach(car => {
+                if ((car.make && car.make.toLowerCase().includes(q)) || 
+                    (car.model && car.model.toLowerCase().includes(q)) || 
+                    (car.plate && car.plate.toLowerCase().includes(q)) || 
+                    (car.vin && car.vin.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Pojazd',
+                        icon: 'car',
+                        title: `${car.make} ${car.model}`,
+                        subtitle: car.plate || car.vin,
+                        action: () => { toggleSearch(); goToModule('cars'); }
+                    });
+                }
+            });
+        }
+        
+        // Search in bailiffs
+        if (db.objectStoreNames.contains('bailiffs')) {
+            const bailiffs = await db.getAll('bailiffs');
+            bailiffs.forEach(b => {
+                if ((b.name && b.name.toLowerCase().includes(q)) || 
+                    (b.court && b.court.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Komornik',
+                        icon: 'gavel',
+                        title: b.name,
+                        subtitle: b.court,
+                        action: () => { toggleSearch(); goToModule('registry'); }
+                    });
+                }
+            });
+        }
+        
+        // Render results
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm">Brak wyników dla "' + query + '"</div>';
+        } else {
+            resultsContainer.innerHTML = results.slice(0, 20).map(r => `
+                <div class="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer flex items-center gap-3 transition-colors" onclick='(${r.action.toString()})()'>
+                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="${r.icon}" class="text-indigo-600 dark:text-indigo-400" size="18"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${r.title}</div>
+                        <div class="text-xs text-slate-500 truncate">${r.subtitle}</div>
+                    </div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">${r.type}</div>
+                </div>
+            `).join('');
+            
+            if (window.lucide) lucide.createIcons();
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = '<div class="p-8 text-center text-red-400 text-sm">Błąd wyszukiwania</div>';
+    }
 }
