@@ -465,6 +465,21 @@ window.APP_VIEWS = {
     </div>
 </div>`,
     'tracker': `<div class="flex flex-col h-full gap-6 lg:flex-row">
+    <div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-96 shadow-2xl animate-fade">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold dark:text-white">Dodaj Przypomnienie</h3>
+                <button onclick="trackerModule.closeReminderModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <p id="reminderDateDisplay" class="text-xs text-indigo-600 font-bold mb-3 uppercase tracking-wider"></p>
+            <input type="hidden" id="reminderDateInput">
+
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Treść</label>
+            <textarea id="reminderText" rows="3" class="w-full border p-3 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none mb-4" placeholder="Np. Wyślij pismo..."></textarea>
+
+            <button onclick="trackerModule.saveReminder()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors">Zapisz</button>
+        </div>
+    </div>
     <!-- Main content area -->
     <div class="relative flex-1 overflow-hidden glass-panel rounded-2xl shadow-sm">
         <!-- Grid View (List of cases) -->
@@ -472,12 +487,17 @@ window.APP_VIEWS = {
             <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
                 <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
+                        <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors" oninput="trackerModule.renderFullTracker(this.value)">
+                    </div>
                     <div class="text-xs font-bold text-slate-500" id="tracker-case-count">Ładuję...</div>
                     <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
                     <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
                     <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
                 </div>
             </div>
+            <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">
             <div id="tracker-list" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 overflow-y-auto custom-scroll content-start">
                 <!-- Case binders will be injected here -->
             </div>
@@ -488,6 +508,7 @@ window.APP_VIEWS = {
              <div class="flex items-center pr-2 text-xs border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <button onclick="trackerModule.closeCase()" class="px-4 py-3 mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-r dark:border-slate-700"><i data-lucide="arrow-left"></i></button>
                 <div id="tracker-case-label" class="font-mono text-slate-400">Edycja sprawy...</div>
+                <button id="save-case-btn" onclick="trackerModule.saveCase()" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
                 <button onclick="trackerModule.saveCase()" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
              </div>
             <div class="flex-1 p-6 overflow-y-auto custom-scroll">
@@ -520,6 +541,10 @@ window.APP_VIEWS = {
                                 <option value="finished">Zakończona</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
+                        <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                        <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
                             <select id="trPriority" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">

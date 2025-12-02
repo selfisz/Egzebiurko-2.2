@@ -1,203 +1,319 @@
-// --- MODULE: TRACKER ---
+const trackerModule = (() => {
+    let currentCaseId = null;
+    let cases = [];
+    let isArchivedView = false;
+    let currentDate = new Date();
+    const STORE_NAME = 'tracker';
 
-let currentCaseId = null;
-let isArchivedView = false;
-let currentFilter = { date: null, sort: 'deadline' };
+    async function getDB() {
+        if (!state.db) await initDB();
+        return state.db;
+    }
 
-async function initTracker() {
-    await renderFullTracker();
-    await renderCalendar();
+    async function getAllCases() {
+        const db = await getDB();
+        return db.transaction(STORE_NAME).store.getAll();
+    }
 
-    // Event listener for sorting
-    const sortSelect = document.getElementById('trSort');
-    if (sortSelect) {
-        sortSelect.addEventListener('change', (e) => {
-            currentFilter.sort = e.target.value;
-            renderFullTracker();
+    async function getCase(id) {
+        const db = await getDB();
+        return db.transaction(STORE_NAME).store.get(id);
+    }
+
+    async function saveCaseToDB(caseData) {
+        const db = await getDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        await tx.store.put(caseData);
+        await tx.done;
+        return caseData;
+    }
+
+    async function deleteCaseFromDB(id) {
+        const db = await getDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        await tx.store.delete(id);
+        await tx.done;
+    }
+
+    function createCaseBinder(caseData) {
+        const statusLabels = { new: 'Nowa', 'in-progress': 'W toku', finished: 'Zakończona' };
+        
+        const urgentStyle = caseData.urgent ? 'border-red-200 dark:border-red-700' : 'border-slate-200 dark:border-slate-700';
+        
+        const daysRemaining = Math.ceil((new Date(caseData.date) - new Date()) / (1000 * 60 * 60 * 24));
+        let deadlineText = '';
+        if (daysRemaining < 0) deadlineText = `<span class="font-bold text-red-500">${Math.abs(daysRemaining)} dni po terminie</span>`;
+        else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
+        else deadlineText = `${daysRemaining} dni`;
+
+        const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+
+        return `
+            <div
+                class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all"
+            >
+                <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
+                    <div class="flex items-center gap-3">
+                        <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
+                        <div class="text-xs text-slate-400 font-mono">${caseData.unp || ''}</div>
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-right ml-4">
+                    <div class="w-24">
+                        <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
+                        <div class="text-[10px] text-slate-400">${deadlineText}</div>
+                    </div>
+                    <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status]}</div>
+                    ${favoriteIcon}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderFullTracker(filter = '') {
+        const listEl = document.getElementById('tracker-list');
+        const countEl = document.getElementById('tracker-case-count');
+        if (!listEl || !countEl) return;
+
+        const filteredCases = cases.filter(c => {
+            return c.archived === isArchivedView;
+        }).filter(c => {
+            if (!filter) return true;
+            const searchTerm = filter.toLowerCase();
+            return Object.values(c).some(val =>
+                String(val).toLowerCase().includes(searchTerm)
+            );
         });
-    }
-}
 
-function openCase(id) {
-    currentCaseId = id;
-    const gridView = document.getElementById('tracker-grid-view');
-    const detailView = document.getElementById('tracker-detail-view');
-
-    gridView.classList.add('-translate-x-full');
-    detailView.classList.remove('translate-x-full');
-
-    populateCaseDetails(id);
-}
-
-function closeCase() {
-    currentCaseId = null;
-    const gridView = document.getElementById('tracker-grid-view');
-    const detailView = document.getElementById('tracker-detail-view');
-
-    gridView.classList.remove('-translate-x-full');
-    detailView.classList.add('translate-x-full');
-}
-
-async function populateCaseDetails(id) {
-    const c = await state.db.get('cases', id);
-    if (!c) return;
-
-    document.getElementById('trNo').value = c.no || '';
-    document.getElementById('trUnp').value = c.unp || '';
-    document.getElementById('trDebtor').value = c.debtor || '';
-    document.getElementById('trDate').value = c.date || '';
-    document.getElementById('trStatus').value = c.status || 'new';
-    document.getElementById('trPriority').value = c.priority || 'medium';
-    document.getElementById('trNote').value = c.note || '';
-    document.getElementById('tracker-case-label').innerText = `Edycja: ${c.no}`;
-}
-
-async function addNewCase() {
-    const newCase = {
-        no: `KMS-${new Date().getFullYear()}/`,
-        date: new Date().toISOString().slice(0, 10),
-        debtor: '',
-        note: '',
-        unp: '',
-        status: 'new',
-        priority: 'medium',
-        archived: false,
-        lastModified: new Date().toISOString()
-    };
-
-    const newId = await state.db.add('cases', newCase);
-    await renderFullTracker();
-    openCase(newId);
-}
-
-async function saveCase() {
-    if (!currentCaseId) return;
-
-    const c = await state.db.get('cases', currentCaseId);
-    if (!c) return;
-
-    c.no = document.getElementById('trNo').value;
-    c.unp = document.getElementById('trUnp').value;
-    c.debtor = document.getElementById('trDebtor').value;
-    c.date = document.getElementById('trDate').value;
-    c.status = document.getElementById('trStatus').value;
-    c.priority = document.getElementById('trPriority').value;
-    c.note = document.getElementById('trNote').value;
-    c.lastModified = new Date().toISOString();
-
-    await state.db.put('cases', c);
-    await renderFullTracker();
-    closeCase();
-}
-
-
-async function renderFullTracker() {
-    const list = document.getElementById('tracker-list');
-    if (!list) return;
-    list.innerHTML = '<div class="text-slate-400 p-4">Ładuję sprawy...</div>';
-
-    const allCases = await state.db.getAll('cases');
-    const filteredCases = allCases.filter(c => c.archived === isArchivedView);
-    
-    // Date filtering
-    let casesToRender = filteredCases;
-    if (currentFilter.date) {
-        casesToRender = filteredCases.filter(c => {
-            const caseDeadline = new Date(c.date);
-            caseDeadline.setDate(caseDeadline.getDate() + 30);
-            return caseDeadline.toISOString().slice(0,10) === currentFilter.date;
+        const sortMethod = document.getElementById('trSort').value;
+        filteredCases.sort((a, b) => {
+            if (a.urgent !== b.urgent) return b.urgent - a.urgent; // Urgent cases first
+            switch (sortMethod) {
+                case 'deadline': return new Date(a.date) - new Date(b.date);
+                case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
+                case 'no': return a.no.localeCompare(b.no);
+                default: return 0;
+            }
         });
+        
+        listEl.innerHTML = filteredCases.length ? filteredCases.map(createCaseBinder).join('') : '<div class="text-center text-slate-400 py-10">Brak spraw.</div>';
+        countEl.textContent = `${filteredCases.length} spraw`;
+        lucide.createIcons();
     }
 
-    // Sorting
-    const proc = casesToRender.map(x => {
-        const d = new Date(x.date);
-        d.setDate(d.getDate() + 30);
-        return { ...x, dl: d, left: Math.ceil((d - new Date()) / 86400000) };
-    });
+    function openCase(id) {
+        currentCaseId = id;
+        const caseData = cases.find(c => c.id === id);
+        if (!caseData) return;
 
-    const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 };
-    if (currentFilter.sort === 'deadline') proc.sort((a, b) => a.left - b.left);
-    else if (currentFilter.sort === 'added') proc.sort((a, b) => new Date(b.date) - new Date(a.date));
-    else if (currentFilter.sort === 'no') proc.sort((a, b) => a.no.localeCompare(b.no));
-    else if (currentFilter.sort === 'priority') proc.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        document.getElementById('trNo').value = caseData.no;
+        document.getElementById('trUnp').value = caseData.unp;
+        document.getElementById('trDebtor').value = caseData.debtor;
+        document.getElementById('trDate').value = caseData.date;
+        document.getElementById('trStatus').value = caseData.status;
+        document.getElementById('trUrgent').checked = caseData.urgent;
+        document.getElementById('trNote').value = caseData.note;
+        document.getElementById('tracker-case-label').textContent = `Edycja: ${caseData.no}`;
 
-    list.innerHTML = '';
+        document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
+    }
+
+    async function toggleFavorite(caseId) {
+        const caseData = cases.find(c => c.id === caseId);
+        if (caseData) {
+            caseData.isFavorite = !caseData.isFavorite;
+            await saveCaseToDB(caseData);
+            renderFullTracker(); // Re-render to show favorite status
+            // Optionally, update favorites popover if it's open
+        }
+    }
+
+    async function getNextCaseNumber() {
+        const allCases = await getAllCases();
+        const year = new Date().getFullYear().toString().slice(-2);
+        const prefix1 = `1228-SEE-7/${year}`;
+        const prefix2 = `1228-25-${year}`;
+
+        let maxNum1 = 0;
+        let maxNum2 = 0;
+
+        allCases.forEach(c => {
+            if (c.no.startsWith(prefix1)) {
+                const num = parseInt(c.no.split('-').pop(), 10);
+                if (num > maxNum1) maxNum1 = num;
+            } else if (c.no.startsWith(prefix2)) {
+                const num = parseInt(c.no.split('-').pop(), 10);
+                if (num > maxNum2) maxNum2 = num;
+            }
+        });
+
+        // Default to the most common prefix
+        return `${prefix1}-${maxNum1 + 1}`;
+    }
+
+    function closeCase() {
+        currentCaseId = null;
+        document.getElementById('tracker-grid-view').classList.remove('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.add('translate-x-full');
+    }
+
+    async function saveCase() {
+        const status = document.getElementById('trStatus').value;
+        const caseData = {
+            id: currentCaseId,
+            no: document.getElementById('trNo').value.trim(),
+            unp: document.getElementById('trUnp').value.trim(),
+            debtor: document.getElementById('trDebtor').value.trim(),
+            date: document.getElementById('trDate').value,
+            status: status,
+            urgent: document.getElementById('trUrgent').checked,
+            note: document.getElementById('trNote').value.trim(),
+            archived: status === 'finished',
+        };
+
+        if (!caseData.no || !caseData.date) {
+            alert('Numer sprawy i data są wymagane.');
+            return;
+        }
+
+        if (currentCaseId) {
+            const existingCase = cases.find(c => c.id === currentCaseId);
+            caseData.createdAt = existingCase.createdAt;
+        } else {
+            caseData.id = Date.now();
+            caseData.createdAt = new Date().toISOString();
+        }
+
+        await saveCaseToDB(caseData);
+
+        closeCase();
+        await loadCases();
+
+        // Po załadowaniu danych sprawdzamy powiadomienia i widżety
+        if (typeof checkNotifications === 'function') {
+            checkNotifications();
+        }
+        if (typeof renderDashboardWidgets === 'function') {
+            renderDashboardWidgets();
+        }
+    }
     
-    if (proc.length === 0) {
-        list.innerHTML = `<div class="text-slate-400 p-4 col-span-full text-center">Brak spraw.</div>`;
-    } else {
-        proc.forEach(c => list.appendChild(createCaseBinder(c)));
+    async function addNewCase() {
+        currentCaseId = null;
+        const nextCaseNumber = await getNextCaseNumber();
+        const caseNoInput = document.getElementById('trNo');
+        caseNoInput.value = nextCaseNumber;
+
+        caseNoInput.ondblclick = async () => {
+            const allCases = await getAllCases();
+            const year = new Date().getFullYear().toString().slice(-2);
+            const prefix2 = `1228-25-${year}`;
+            let maxNum2 = 0;
+            allCases.forEach(c => {
+                if (c.no.startsWith(prefix2)) {
+                    const num = parseInt(c.no.split('-').pop(), 10);
+                    if (num > maxNum2) maxNum2 = num;
+                }
+            });
+            caseNoInput.value = `${prefix2}-${maxNum2 + 1}`;
+        };
+
+        document.getElementById('trUnp').value = '';
+        document.getElementById('trDebtor').value = '';
+        document.getElementById('trDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('trStatus').value = 'new';
+        document.getElementById('trUrgent').checked = false;
+        document.getElementById('trNote').value = '';
+        document.getElementById('tracker-case-label').textContent = 'Nowa Sprawa';
+
+        document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
+        document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
     }
 
-    document.getElementById('tracker-case-count').innerText = `${proc.length} spraw`;
-    if (window.lucide) lucide.createIcons();
-}
-
-function createCaseBinder(c) {
-    const div = document.createElement('div');
-    const daysLeft = c.left;
-
-    let borderColor = 'border-slate-200 dark:border-slate-700';
-    if (!c.archived) {
-        if (daysLeft < 3) borderColor = 'border-red-500';
-        else if (daysLeft < 8) borderColor = 'border-yellow-500';
+    function showArchived(show) {
+        isArchivedView = show;
+        const archiveBtn = document.getElementById('archiveBtn');
+        if (show) {
+            archiveBtn.textContent = 'Aktywne';
+            archiveBtn.onclick = () => showArchived(false);
+        } else {
+            archiveBtn.textContent = 'Archiwum';
+            archiveBtn.onclick = () => showArchived(true);
+        }
+        renderFullTracker();
     }
 
-    const statusColors = {
-        'new': 'bg-blue-100 text-blue-700',
-        'in-progress': 'bg-amber-100 text-amber-700',
-        'finished': 'bg-emerald-100 text-emerald-700'
-    };
-    const statusText = { 'new': 'Nowa', 'in-progress': 'W toku', 'finished': 'Zakończona' };
-    const priorityIcons = { 'high': 'chevrons-up', 'medium': 'equal', 'low': 'chevrons-down' };
-    const priorityColors = { 'high': 'text-red-500', 'medium': 'text-slate-400', 'low': 'text-green-500' };
-
-    div.className = `flex flex-col p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-l-4 ${borderColor} cursor-pointer transition-all group relative shadow-sm h-40 justify-between`;
-    div.onclick = () => openCase(c.id);
-
-    div.innerHTML = `
-        <div>
-            <div class="flex justify-between items-start">
-                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColors[c.status]}">${statusText[c.status]}</span>
-                <span class="text-xs font-bold ${daysLeft < 3 ? 'text-red-500 animate-pulse' : 'text-slate-500'}">${c.archived ? 'Zarchiwizowano' : `${daysLeft} dni`}</span>
-            </div>
-            <div class="mt-2">
-                <div class="font-bold text-sm text-slate-800 dark:text-white truncate">${c.no}</div>
-                <div class="text-xs text-slate-500 truncate">${c.debtor || 'Brak danych'}</div>
-            </div>
-        </div>
-        <div class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700/50">
-            <div class="flex items-center gap-2 text-xs text-slate-400">
-                <i data-lucide="${priorityIcons[c.priority]}" size="14" class="${priorityColors[c.priority]}"></i>
-                <span>UNP: ${c.unp || '-'}</span>
-            </div>
-            <div class="flex items-center gap-1">
-                 <button onclick="event.stopPropagation(); trackerModule.deleteCase(${c.id})" class="p-1 text-slate-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" size="14"></i></button>
-                 <button onclick="event.stopPropagation(); trackerModule.toggleArchive(${c.id})" class="p-1 text-slate-400 hover:text-amber-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="${c.archived ? 'unarchive' : 'archive'}" size="14"></i></button>
-            </div>
-        </div>
-    `;
-    return div;
-}
-
-async function deleteCase(id) {
-    if (!confirm("Czy na pewno chcesz usunąć tę sprawę? Tej akcji nie można cofnąć.")) return;
-    await state.db.delete('cases', id);
-    await renderFullTracker();
-    await renderCalendar();
-}
-
-async function toggleArchive(id) {
-    const c = await state.db.get('cases', id);
-    if (c) {
-        c.archived = !c.archived;
-        c.lastModified = new Date().toISOString();
-        await state.db.put('cases', c);
-        await renderFullTracker();
+    function openReminderModal(date) {
+        document.getElementById('reminderDateInput').value = date;
+        document.getElementById('reminderDateDisplay').textContent = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('reminderModal').classList.remove('hidden');
     }
-}
 
+    function closeReminderModal() {
+        document.getElementById('reminderModal').classList.add('hidden');
+    }
+
+    function renderCalendar() {
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calendarMonthEl = document.getElementById('calendarMonth');
+        if (!calendarGrid || !calendarMonthEl) return;
+
+        calendarGrid.innerHTML = '';
+        calendarMonthEl.textContent = currentDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        const daysInMonth = lastDay.getDate();
+        let startDay = firstDay.getDay();
+        startDay = (startDay === 0) ? 6 : startDay - 1;
+
+        ['PN', 'WT', 'ŚR', 'CZ', 'PT', 'SB', 'ND'].forEach(day => {
+            calendarGrid.innerHTML += `<div class="font-bold text-slate-400">${day}</div>`;
+        });
+        
+        for (let i = 0; i < startDay; i++) calendarGrid.innerHTML += '<div></div>';
+
+        const reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayEl = document.createElement('div');
+            dayEl.textContent = i;
+            dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative';
+
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            dayEl.onclick = () => openReminderModal(dateStr);
+
+            const today = new Date();
+            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                dayEl.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+            }
+
+            const casesOnDay = cases.filter(c => {
+                const caseDate = new Date(c.date);
+                return caseDate.getDate() === i && caseDate.getMonth() === month && caseDate.getFullYear() === year;
+            });
+
+            if (casesOnDay.length) {
+                const dot = document.createElement('div');
+                dot.className = 'absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full';
+                dot.classList.add(caseData.urgent ? 'bg-red-500' : 'bg-blue-500');
+                dayEl.appendChild(dot);
+            }
+
+            if (reminders[dateStr]) {
+                const reminderDot = document.createElement('div');
+                reminderDot.className = 'absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-green-500';
+                dayEl.appendChild(reminderDot);
+            }
+
+            calendarGrid.appendChild(dayEl);
+        }
 function showArchived(show) {
     isArchivedView = show;
     const btn = document.getElementById('archiveBtn');
@@ -264,8 +380,55 @@ async function renderCalendar() {
         d.onclick = () => filterByDate(dateStr);
         grid.appendChild(d);
     }
-}
 
+    async function saveReminder() {
+        const date = document.getElementById('reminderDateInput').value;
+        const text = document.getElementById('reminderText').value.trim();
+        if (!text) return;
+
+        let reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        if (!reminders[date]) reminders[date] = [];
+        reminders[date].push(text);
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+
+        closeReminderModal();
+        renderCalendar();
+    }
+
+    function changeMonth(offset) {
+        currentDate.setMonth(currentDate.getMonth() + offset);
+        renderCalendar();
+    }
+
+    async function loadCases() {
+        cases = await getAllCases();
+        renderFullTracker();
+        renderCalendar();
+    }
+
+    async function initTracker() {
+        await loadCases();
+        document.getElementById('trSort').addEventListener('change', () => renderFullTracker());
+        document.getElementById('trackerSearch').addEventListener('input', (e) => renderFullTracker(e.target.value));
+        document.getElementById('save-case-btn').addEventListener('click', saveCase);
+        showArchived(false); // Reset to default view
+    }
+
+    return {
+        initTracker,
+        openCase,
+        closeCase,
+        saveCase,
+        addNewCase,
+        showArchived,
+        changeMonth,
+        renderFullTracker,
+        toggleFavorite,
+        openReminderModal,
+        closeReminderModal,
+        saveReminder,
+    };
+})();
 function filterByDate(dateStr) {
     if (currentFilter.date === dateStr) {
         currentFilter.date = null; // Toggle off
