@@ -328,7 +328,11 @@ const trackerModule = (() => {
             dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative text-center text-sm';
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            dayEl.onclick = () => filterByDate(dateStr);
+            // Kliknięcie w dzień: filtruje sprawy po dacie ORAZ otwiera modal przypomnienia
+            dayEl.onclick = () => {
+                filterByDate(dateStr);
+                openReminderModal(dateStr);
+            };
 
             if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                 dayEl.classList.add('bg-indigo-600', 'text-white', 'font-bold');
