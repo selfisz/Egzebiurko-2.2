@@ -82,7 +82,8 @@ async function checkNotifications() {
 
         // Filter out powiadomienia oznaczone jako ukryte
         const dismissed = getDismissedNotificationIds();
-        if (dismissed.size > 0) {
+        const dismissedCount = dismissed.size;
+        if (dismissedCount > 0) {
             uniqueNotifs = uniqueNotifs.filter(n => !dismissed.has(n.id));
         }
 
@@ -148,6 +149,25 @@ async function checkNotifications() {
                 remNotifs.forEach(appendNotif);
             }
 
+            // Footer: opcja pokazania ukrytych powiadomień
+            if (dismissedCount > 0) {
+                const footer = document.createElement('div');
+                footer.className = 'px-3 py-2 text-[10px] text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-900/40';
+                const info = document.createElement('span');
+                info.textContent = `Ukryte powiadomienia: ${dismissedCount}`;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'text-indigo-600 dark:text-indigo-400 font-bold hover:underline';
+                btn.textContent = 'Pokaż ukryte';
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    resetDismissedNotifications();
+                };
+                footer.appendChild(info);
+                footer.appendChild(btn);
+                notifList.appendChild(footer);
+            }
+
             if (window.lucide) lucide.createIcons();
         }
     } catch (error) {
@@ -180,6 +200,18 @@ function dismissNotification(id) {
     const dismissed = getDismissedNotificationIds();
     dismissed.add(id);
     saveDismissedNotificationIds(dismissed);
+    checkNotifications();
+    if (typeof renderDashboardWidgets === 'function') {
+        renderDashboardWidgets();
+    }
+}
+
+function resetDismissedNotifications() {
+    try {
+        localStorage.removeItem('lex_dismissed_notifs');
+    } catch (e) {
+        console.error('Dismissed notifs reset error:', e);
+    }
     checkNotifications();
     if (typeof renderDashboardWidgets === 'function') {
         renderDashboardWidgets();

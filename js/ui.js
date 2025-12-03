@@ -81,13 +81,8 @@ async function renderDashboardWidgets() {
         const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
         const cases = await db.getAll('tracker');
 
-        // --- PILNE SPRAWY ---
-        const urgentCases = cases.filter(c => {
-            const aWeekFromNow = new Date();
-            aWeekFromNow.setDate(aWeekFromNow.getDate() + 7);
-            const caseDate = new Date(c.date);
-            return !c.archived && c.urgent && caseDate <= aWeekFromNow && caseDate >= new Date();
-        });
+        // --- PILNE SPRAWY --- (wszystkie sprawy oznaczone jako pilne, bez ograniczenia 7 dni)
+        const urgentCases = cases.filter(c => !c.archived && c.urgent);
 
         let urgentCasesWidget = '';
         if (urgentCases.length > 0) {
@@ -189,9 +184,11 @@ async function renderDashboardWidgets() {
             }
 
             // Respect dismissed IDs
+            let dismissedCount = 0;
             if (typeof getDismissedNotificationIds === 'function') {
                 const dismissed = getDismissedNotificationIds();
-                if (dismissed.size > 0) {
+                dismissedCount = dismissed.size;
+                if (dismissedCount > 0) {
                     notifs = notifs.filter(n => !dismissed.has(n.id));
                 }
             }
@@ -201,7 +198,10 @@ async function renderDashboardWidgets() {
             if (unique.length > 0) {
                 notificationsWidget = `
                     <div class="glass-panel p-6 rounded-2xl shadow-sm">
-                        <h3 class="font-bold text-sky-600 dark:text-sky-400 mb-4 flex items-center gap-2"><i data-lucide="bell"></i> Powiadomienia</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2"><i data-lucide="bell"></i> Powiadomienia</h3>
+                            ${dismissedCount > 0 ? `<span class=\"text-[10px] text-slate-400\">Ukryte: ${dismissedCount}</span>` : ''}
+                        </div>
                         <div class="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden text-[11px]">
                             <div class="grid grid-cols-12 bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-semibold px-3 py-1.5">
                                 <div class="col-span-2">Typ</div>
@@ -209,7 +209,7 @@ async function renderDashboardWidgets() {
                             </div>
                             <div class="max-h-40 overflow-y-auto custom-scroll bg-white dark:bg-slate-900/40">
                                 ${unique.map(n => `
-                                    <div class="grid grid-cols-12 items-start px-3 py-1.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+                                    <div class="grid grid-cols-12 items-start px-3 py-1.5 border-t border-slate-100 dark:border-slate-800 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onclick=\"goToModule('tracker')\">
                                         <div class="col-span-2 flex items-center gap-1 text-${n.color}-500">
                                             <i data-lucide="${n.icon}" size="14"></i>
                                             <span>${n.kind}</span>

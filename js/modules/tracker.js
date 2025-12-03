@@ -73,11 +73,6 @@ const trackerModule = (() => {
 
         let filteredCases = cases.filter(c => c.archived === isArchivedView);
         
-        // Filter by date if set
-        if (currentFilter.date) {
-            filteredCases = filteredCases.filter(c => c.date === currentFilter.date);
-        }
-        
         // Filter by search term
         if (filter) {
             const searchTerm = filter.toLowerCase();
