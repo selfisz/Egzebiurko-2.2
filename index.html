@@ -165,7 +165,11 @@
     <main class="flex-1 h-full overflow-hidden relative flex flex-col">
         
         <header class="absolute top-0 right-0 left-0 h-16 flex justify-end items-center px-8 z-40 pointer-events-none">
-            <div class="pointer-events-auto flex gap-4">
+            <div class="pointer-events-auto flex gap-4 items-center">
+                <button onclick="lockScreen()" class="p-2 bg-white dark:bg-slate-800 rounded-full shadow-md hover:scale-105 transition-transform text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700" title="Zablokuj ekran">
+                    <i data-lucide="lock" size="20"></i>
+                </button>
+
                 <div class="relative">
                     <button onclick="toggleFavorites()" class="p-2 bg-white dark:bg-slate-800 rounded-full shadow-md hover:scale-105 transition-transform text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
                         <i data-lucide="briefcase" size="20"></i>
