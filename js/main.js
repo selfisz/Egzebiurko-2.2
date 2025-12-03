@@ -15,6 +15,47 @@ function handleRouteChange() {
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // PIN: jeśli ustawiony, pokaż overlay przed inicjalizacją
+    try {
+        const storedPin = localStorage.getItem('lex_pin');
+        if (storedPin) {
+            const overlay = document.getElementById('pinLockOverlay');
+            const input = document.getElementById('pinInput');
+            const errorEl = document.getElementById('pinError');
+            if (overlay) overlay.classList.remove('hidden');
+            if (input) {
+                input.value = '';
+                input.focus();
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        submitPin();
+                    }
+                });
+            }
+            if (errorEl) errorEl.textContent = '';
+
+            // Opóźnij pełną inicjalizację do momentu poprawnego PIN-u
+            const originalSubmitPin = window.submitPin;
+            window.submitPin = () => {
+                const beforeHidden = overlay.classList.contains('hidden');
+                originalSubmitPin();
+                // jeśli po wywołaniu overlay jest ukryty, znaczy że PIN poprawny -> inicjalizujemy
+                if (overlay.classList.contains('hidden') && !beforeHidden) {
+                    startApp();
+                    window.submitPin = originalSubmitPin; // przywróć oryginalną funkcję
+                }
+            };
+            return; // nie inicjalizuj dalej, czekaj na PIN
+        }
+    } catch (e) {
+        console.error('PIN init error:', e);
+    }
+
+    // Jeśli PIN nie jest ustawiony, od razu startujemy aplikację
+    startApp();
+});
+
+async function startApp() {
     await initDB();
     handleRouteChange(); // Initial route handler
     lucide.createIcons();
@@ -36,7 +77,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTheme('default');
 
     applySidebarOrder();
-});
+    
+    // Zaktualizuj status PIN w Ustawieniach (jeśli widok będzie otwarty później)
+    if (typeof updatePinStatus === 'function') {
+        updatePinStatus();
+    }
+}
 
 // --- KEYBOARD SHORTCUTS ---
 document.addEventListener('keydown',(e)=>{ 

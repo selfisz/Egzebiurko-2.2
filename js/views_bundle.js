@@ -361,6 +361,43 @@ window.APP_VIEWS = {
                    </div>
               </div>
 
+              <div class="glass-panel p-8 rounded-2xl shadow-lg flex flex-col gap-4 bg-white/50 dark:bg-slate-800/50">
+                   <div class="flex items-center gap-4 border-b border-slate-200/50 dark:border-slate-700/50 pb-4">
+                       <div class="p-3 bg-slate-100 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200 rounded-xl">
+                           <i data-lucide="shield" size="24"></i>
+                       </div>
+                       <div>
+                           <h3 class="font-bold text-lg text-slate-800 dark:text-white">Blokada PIN</h3>
+                           <p class="text-xs text-slate-500">4-cyfrowy PIN do zablokowania ekranu.</p>
+                       </div>
+                   </div>
+
+                   <div class="grid grid-cols-2 gap-3">
+                       <div>
+                           <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nowy PIN</label>
+                           <input id="pinNew" type="password" maxlength="4" inputmode="numeric" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white tracking-[0.4em] text-center" placeholder="••••">
+                       </div>
+                       <div>
+                           <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Powtórz PIN</label>
+                           <input id="pinConfirm" type="password" maxlength="4" inputmode="numeric" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white tracking-[0.4em] text-center" placeholder="••••">
+                       </div>
+                   </div>
+
+                   <div class="flex items-center gap-3 mt-2">
+                       <button onclick="savePinSettings()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors">
+                           Zapisz PIN
+                       </button>
+                       <button onclick="clearPinSettings()" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-lg text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-slate-600">
+                           Usuń PIN
+                       </button>
+                   </div>
+
+                   <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                       <span id="pinStatus">PIN nie jest ustawiony.</span>
+                       <button onclick="lockScreen()" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline">Zablokuj ekran</button>
+                   </div>
+              </div>
+
           </div>
       </div>
 

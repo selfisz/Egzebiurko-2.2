@@ -266,6 +266,116 @@ function goHome() {
     goToModule('dashboard');
 }
 
+// --- PIN LOCK / SETTINGS ---
+function getStoredPin() {
+    try {
+        return localStorage.getItem('lex_pin') || '';
+    } catch (e) {
+        console.error('PIN read error:', e);
+        return '';
+    }
+}
+
+function setStoredPin(pin) {
+    try {
+        if (pin) {
+            localStorage.setItem('lex_pin', pin);
+        } else {
+            localStorage.removeItem('lex_pin');
+        }
+    } catch (e) {
+        console.error('PIN save error:', e);
+    }
+}
+
+function updatePinStatus() {
+    const statusEl = document.getElementById('pinStatus');
+    if (!statusEl) return;
+    const pin = getStoredPin();
+    if (pin) {
+        statusEl.textContent = 'PIN jest ustawiony.';
+    } else {
+        statusEl.textContent = 'PIN nie jest ustawiony.';
+    }
+}
+
+function savePinSettings() {
+    const pinNewEl = document.getElementById('pinNew');
+    const pinConfirmEl = document.getElementById('pinConfirm');
+    if (!pinNewEl || !pinConfirmEl) return;
+
+    const p1 = (pinNewEl.value || '').trim();
+    const p2 = (pinConfirmEl.value || '').trim();
+
+    if (!/^\d{4}$/.test(p1) || !/^\d{4}$/.test(p2)) {
+        alert('PIN musi składać się z dokładnie 4 cyfr.');
+        return;
+    }
+    if (p1 !== p2) {
+        alert('PIN i powtórzenie PIN muszą być takie same.');
+        return;
+    }
+
+    setStoredPin(p1);
+    pinNewEl.value = '';
+    pinConfirmEl.value = '';
+    updatePinStatus();
+    alert('PIN został zapisany.');
+}
+
+function clearPinSettings() {
+    setStoredPin('');
+    const pinNewEl = document.getElementById('pinNew');
+    const pinConfirmEl = document.getElementById('pinConfirm');
+    if (pinNewEl) pinNewEl.value = '';
+    if (pinConfirmEl) pinConfirmEl.value = '';
+    updatePinStatus();
+    alert('PIN został usunięty.');
+}
+
+function lockScreen() {
+    const pin = getStoredPin();
+    if (!pin) {
+        alert('PIN nie jest ustawiony. Ustaw go najpierw w Ustawieniach.');
+        return;
+    }
+    const overlay = document.getElementById('pinLockOverlay');
+    const input = document.getElementById('pinInput');
+    const errorEl = document.getElementById('pinError');
+    if (overlay) overlay.classList.remove('hidden');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    if (errorEl) errorEl.textContent = '';
+}
+
+function submitPin() {
+    const input = document.getElementById('pinInput');
+    const errorEl = document.getElementById('pinError');
+    const overlay = document.getElementById('pinLockOverlay');
+    if (!input || !overlay) return;
+
+    const entered = (input.value || '').trim();
+    const stored = getStoredPin();
+
+    if (!stored) {
+        // Jeśli z jakiegoś powodu brak PIN-u, po prostu odblokuj
+        overlay.classList.add('hidden');
+        return;
+    }
+
+    if (entered === stored) {
+        overlay.classList.add('hidden');
+        input.value = '';
+        if (errorEl) errorEl.textContent = '';
+    } else {
+        if (errorEl) errorEl.textContent = 'Nieprawidłowy PIN.';
+        input.value = '';
+        input.focus();
+    }
+}
+
 // --- GLOBAL SEARCH ---
 async function runGlobalSearch(query) {
     const resultsContainer = document.getElementById('searchResults');
