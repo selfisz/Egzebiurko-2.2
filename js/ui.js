@@ -81,6 +81,7 @@ async function renderDashboardWidgets() {
         const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
         const cases = await db.getAll('tracker');
 
+        // --- PILNE SPRAWY ---
         const urgentCases = cases.filter(c => {
             const aWeekFromNow = new Date();
             aWeekFromNow.setDate(aWeekFromNow.getDate() + 7);
@@ -107,7 +108,8 @@ async function renderDashboardWidgets() {
                 </div>
             `;
         }
-        // --- FAVORITES WIDGET ---
+
+        // --- ULUBIONE SPRAWY ---
         const favoriteCases = cases.filter(c => c.isFavorite && !c.archived);
         let favoritesWidget = '';
         if (favoriteCases.length > 0) {
@@ -128,7 +130,105 @@ async function renderDashboardWidgets() {
             `;
         }
 
-        container.innerHTML = urgentCasesWidget + favoritesWidget;
+        // --- POWIADOMIENIA (PANEL NA PULPICIE) ---
+        let notificationsWidget = '';
+        try {
+            const now = new Date();
+            let notifs = [];
+
+            // Terminy spraw (jak w notifications.js)
+            cases.filter(c => !c.archived).forEach(c => {
+                const caseDate = new Date(c.date);
+                const daysLeft = Math.ceil((caseDate - now) / (1000 * 60 * 60 * 24));
+                if (daysLeft >= 0 && daysLeft <= 7) {
+                    const urgent = daysLeft <= 3 || c.urgent;
+                    notifs.push({
+                        id: `case-${c.id}`,
+                        kind: 'Sprawa',
+                        icon: 'alert-triangle',
+                        color: urgent ? 'red' : 'orange',
+                        text: `Sprawa ${c.no} za ${daysLeft} dni`,
+                    });
+                }
+            });
+
+            // Przypomnienia kalendarza
+            try {
+                const rawReminders = localStorage.getItem('tracker_reminders');
+                if (rawReminders) {
+                    const reminders = JSON.parse(rawReminders);
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const sevenDaysAhead = new Date(startOfToday);
+                    sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
+
+                    Object.entries(reminders).forEach(([dateStr, items]) => {
+                        const dateObj = new Date(dateStr + 'T00:00:00');
+                        if (isNaN(dateObj)) return;
+                        if (dateObj >= startOfToday && dateObj <= sevenDaysAhead) {
+                            const daysDiff = Math.round((dateObj - startOfToday) / (1000 * 60 * 60 * 24));
+                            const prettyDate = dateObj.toLocaleDateString('pl-PL');
+                            items.forEach((text, idx) => {
+                                const whenText = daysDiff === 0
+                                    ? 'DZIŚ'
+                                    : daysDiff === 1
+                                        ? 'jutro'
+                                        : `za ${daysDiff} dni`;
+                                notifs.push({
+                                    id: `rem-${dateStr}-${idx}`,
+                                    kind: 'Przyp.',
+                                    icon: 'bell',
+                                    color: 'green',
+                                    text: `${prettyDate} (${whenText}): ${text}`,
+                                });
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Dashboard reminders parse error:', e);
+            }
+
+            // Respect dismissed IDs
+            if (typeof getDismissedNotificationIds === 'function') {
+                const dismissed = getDismissedNotificationIds();
+                if (dismissed.size > 0) {
+                    notifs = notifs.filter(n => !dismissed.has(n.id));
+                }
+            }
+
+            // Unique & top 6
+            const unique = Array.from(new Map(notifs.map(n => [n.id, n])).values()).slice(0, 6);
+            if (unique.length > 0) {
+                notificationsWidget = `
+                    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-sky-600 dark:text-sky-400 mb-4 flex items-center gap-2"><i data-lucide="bell"></i> Powiadomienia</h3>
+                        <div class="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden text-[11px]">
+                            <div class="grid grid-cols-12 bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-semibold px-3 py-1.5">
+                                <div class="col-span-2">Typ</div>
+                                <div class="col-span-10">Treść</div>
+                            </div>
+                            <div class="max-h-40 overflow-y-auto custom-scroll bg-white dark:bg-slate-900/40">
+                                ${unique.map(n => `
+                                    <div class="grid grid-cols-12 items-start px-3 py-1.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+                                        <div class="col-span-2 flex items-center gap-1 text-${n.color}-500">
+                                            <i data-lucide="${n.icon}" size="14"></i>
+                                            <span>${n.kind}</span>
+                                        </div>
+                                        <div class="col-span-10 text-slate-700 dark:text-slate-200 truncate">
+                                            ${n.text}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.error('Dashboard notifications error:', e);
+        }
+
+        container.innerHTML = urgentCasesWidget + favoritesWidget + notificationsWidget;
         lucide.createIcons();
     } catch (error) {
         console.error('Dashboard widgets error:', error);

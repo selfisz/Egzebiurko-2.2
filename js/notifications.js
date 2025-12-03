@@ -78,7 +78,13 @@ async function checkNotifications() {
         }
 
         // Remove duplicates by id
-        const uniqueNotifs = Array.from(new Map(notifs.map(n => [n.id, n])).values());
+        let uniqueNotifs = Array.from(new Map(notifs.map(n => [n.id, n])).values());
+
+        // Filter out powiadomienia oznaczone jako ukryte
+        const dismissed = getDismissedNotificationIds();
+        if (dismissed.size > 0) {
+            uniqueNotifs = uniqueNotifs.filter(n => !dismissed.has(n.id));
+        }
 
         // Render Badge
         if (uniqueNotifs.length > 0) {
@@ -88,25 +94,95 @@ async function checkNotifications() {
             notifBadge.classList.add('hidden');
         }
 
-        // Render List
+        // Render List (sekcje: terminy i przypomnienia)
         notifList.innerHTML = '';
         if (uniqueNotifs.length === 0) {
             notifList.innerHTML = '<div class="text-center p-4 text-slate-400 text-xs">Brak nowych powiadomień.</div>';
         } else {
-            uniqueNotifs.forEach(n => {
+            const caseNotifs = uniqueNotifs.filter(n => n.id.startsWith('case-'));
+            const remNotifs = uniqueNotifs.filter(n => n.id.startsWith('rem-'));
+
+            const appendHeader = (label) => {
+                const h = document.createElement('div');
+                h.className = 'px-3 pt-2 pb-1 text-[10px] font-bold uppercase text-slate-400';
+                h.textContent = label;
+                notifList.appendChild(h);
+            };
+
+            const appendNotif = (n) => {
                 const div = document.createElement('div');
-                div.className = "p-3 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex gap-3 items-start";
-                div.innerHTML = `
-                    <div class="text-${n.color}-500 mt-0.5"><i data-lucide="${n.type}" size="16"></i></div>
-                    <div class="text-xs text-slate-600 dark:text-slate-300 font-medium">${n.text}</div>
-                `;
+                div.className = 'p-3 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex gap-3 items-start';
+
+                const iconWrap = document.createElement('div');
+                iconWrap.className = `text-${n.color}-500 mt-0.5`;
+                iconWrap.innerHTML = `<i data-lucide="${n.type}" size="16"></i>`;
+
+                const textWrap = document.createElement('div');
+                textWrap.className = 'flex-1 text-xs text-slate-600 dark:text-slate-300 font-medium';
+                textWrap.textContent = n.text;
+
+                const closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200';
+                closeBtn.innerHTML = '<i data-lucide="x" size="14"></i>';
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    dismissNotification(n.id);
+                };
+
                 div.onclick = n.action;
+                div.appendChild(iconWrap);
+                div.appendChild(textWrap);
+                div.appendChild(closeBtn);
+
                 notifList.appendChild(div);
-            });
+            };
+
+            if (caseNotifs.length > 0) {
+                appendHeader('Terminy spraw');
+                caseNotifs.forEach(appendNotif);
+            }
+
+            if (remNotifs.length > 0) {
+                appendHeader('Przypomnienia');
+                remNotifs.forEach(appendNotif);
+            }
+
             if (window.lucide) lucide.createIcons();
         }
     } catch (error) {
         console.error('Notifications error:', error);
+    }
+}
+
+function getDismissedNotificationIds() {
+    try {
+        const raw = localStorage.getItem('lex_dismissed_notifs');
+        if (!raw) return new Set();
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return new Set();
+        return new Set(arr);
+    } catch (e) {
+        console.error('Dismissed notifs parse error:', e);
+        return new Set();
+    }
+}
+
+function saveDismissedNotificationIds(set) {
+    try {
+        localStorage.setItem('lex_dismissed_notifs', JSON.stringify(Array.from(set)));
+    } catch (e) {
+        console.error('Dismissed notifs save error:', e);
+    }
+}
+
+function dismissNotification(id) {
+    const dismissed = getDismissedNotificationIds();
+    dismissed.add(id);
+    saveDismissedNotificationIds(dismissed);
+    checkNotifications();
+    if (typeof renderDashboardWidgets === 'function') {
+        renderDashboardWidgets();
     }
 }
 
