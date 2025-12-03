@@ -12,6 +12,7 @@ async function checkNotifications() {
 
         let notifs = [];
 
+        // --- Powiadomienia ze spraw (terminy) ---
         cases.filter(c => !c.archived).forEach(c => {
             const caseDate = new Date(c.date);
             const daysLeft = Math.ceil((caseDate - now) / (1000 * 60 * 60 * 24));
@@ -19,7 +20,7 @@ async function checkNotifications() {
             if (daysLeft >= 0 && daysLeft <= 7) {
                 if (daysLeft <= 3) {
                     notifs.push({
-                        id: c.id,
+                        id: `case-${c.id}`,
                         type: 'alert-triangle',
                         color: 'red',
                         text: `Sprawa ${c.no} - termin mija za ${daysLeft} dni!`,
@@ -27,7 +28,7 @@ async function checkNotifications() {
                     });
                 } else if (c.urgent) {
                     notifs.push({
-                        id: c.id,
+                        id: `case-${c.id}`,
                         type: 'alert-triangle',
                         color: 'orange',
                         text: `Pilna sprawa ${c.no} - termin mija za ${daysLeft} dni.`,
@@ -37,7 +38,46 @@ async function checkNotifications() {
             }
         });
 
-        // Remove duplicates by case id
+        // --- Powiadomienia z przypomnień kalendarza ---
+        try {
+            const rawReminders = localStorage.getItem('tracker_reminders');
+            if (rawReminders) {
+                const reminders = JSON.parse(rawReminders);
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const sevenDaysAhead = new Date(startOfToday);
+                sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
+
+                Object.entries(reminders).forEach(([dateStr, items]) => {
+                    const dateObj = new Date(dateStr + 'T00:00:00');
+                    if (isNaN(dateObj)) return;
+
+                    if (dateObj >= startOfToday && dateObj <= sevenDaysAhead) {
+                        const daysDiff = Math.round((dateObj - startOfToday) / (1000 * 60 * 60 * 24));
+                        const prettyDate = dateObj.toLocaleDateString('pl-PL');
+
+                        items.forEach((text, idx) => {
+                            const whenText = daysDiff === 0
+                                ? 'DZIŚ'
+                                : daysDiff === 1
+                                    ? 'jutro'
+                                    : `za ${daysDiff} dni`;
+
+                            notifs.push({
+                                id: `rem-${dateStr}-${idx}`,
+                                type: 'bell',
+                                color: 'green',
+                                text: `Przypomnienie na ${prettyDate} (${whenText}): ${text}`,
+                                action: () => goToModule('tracker')
+                            });
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Reminders parse error:', e);
+        }
+
+        // Remove duplicates by id
         const uniqueNotifs = Array.from(new Map(notifs.map(n => [n.id, n])).values());
 
         // Render Badge
