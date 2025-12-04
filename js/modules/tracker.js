@@ -47,6 +47,13 @@ const trackerModule = (() => {
 
         const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
 
+        // Tagi
+        const tagsHTML = Array.isArray(caseData.tags) && caseData.tags.length > 0
+            ? `<div class="flex flex-wrap gap-1 mt-1.5">
+                ${caseData.tags.map(tag => `<span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">${tag}</span>`).join('')}
+               </div>`
+            : '';
+
         return `
             <div class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
@@ -55,6 +62,7 @@ const trackerModule = (() => {
                         <div class="text-xs text-slate-400 font-mono">${caseData.unp || ''}</div>
                     </div>
                     <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
+                    ${tagsHTML}
                 </div>
                 <div class="flex items-center gap-4 text-xs text-right ml-4">
                     <div class="w-24">
@@ -198,11 +206,15 @@ const trackerModule = (() => {
         if (window.lucide) lucide.createIcons();
     }
 
-    function openCase(id) {
+    let isEditMode = false;
+
+    function openCase(id, editMode = false) {
         currentCaseId = id;
         window.currentCaseId = id; // Make available globally for attachments
         const caseData = cases.find(c => c.id === id);
         if (!caseData) return;
+
+        isEditMode = editMode;
 
         document.getElementById('trNo').value = caseData.no || '';
         document.getElementById('trUnp').value = caseData.unp || '';
@@ -213,7 +225,11 @@ const trackerModule = (() => {
         const priorityEl = document.getElementById('trPriority');
         if (priorityEl) priorityEl.value = caseData.priority || 'medium';
         document.getElementById('trNote').value = caseData.note || '';
-        document.getElementById('tracker-case-label').textContent = `Edycja: ${caseData.no}`;
+        
+        // Ustaw tryb podglądu lub edycji
+        setViewMode(editMode);
+        
+        document.getElementById('tracker-case-label').textContent = editMode ? `Edycja: ${caseData.no}` : `Podgląd: ${caseData.no}`;
 
         currentCaseTags = Array.isArray(caseData.tags) ? caseData.tags.slice() : [];
         renderTagsUI();
@@ -223,6 +239,50 @@ const trackerModule = (() => {
         
         if (typeof renderAttachments === 'function') {
             renderAttachments(id);
+        }
+    }
+
+    function setViewMode(editMode) {
+        const fields = ['trNo', 'trUnp', 'trDebtor', 'trDate', 'trStatus', 'trPriority', 'trUrgent', 'trNote'];
+        const saveBtn = document.getElementById('save-case-btn');
+        const editBtn = document.getElementById('edit-case-btn');
+        const tagInput = document.getElementById('trTagInput');
+        
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.disabled = !editMode;
+                if (!editMode) {
+                    el.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'cursor-not-allowed');
+                } else {
+                    el.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'cursor-not-allowed');
+                }
+            }
+        });
+
+        if (tagInput) tagInput.disabled = !editMode;
+        
+        if (saveBtn) saveBtn.classList.toggle('hidden', !editMode);
+        if (editBtn) editBtn.classList.toggle('hidden', editMode);
+        
+        // Wyłącz przyciski tagów w trybie podglądu
+        const tagButtons = document.querySelectorAll('#trTagsContainer button');
+        tagButtons.forEach(btn => {
+            btn.disabled = !editMode;
+            if (!editMode) {
+                btn.classList.add('cursor-not-allowed', 'opacity-60');
+            } else {
+                btn.classList.remove('cursor-not-allowed', 'opacity-60');
+            }
+        });
+    }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        setViewMode(isEditMode);
+        const caseData = cases.find(c => c.id === currentCaseId);
+        if (caseData) {
+            document.getElementById('tracker-case-label').textContent = isEditMode ? `Edycja: ${caseData.no}` : `Podgląd: ${caseData.no}`;
         }
     }
 
@@ -616,6 +676,7 @@ const trackerModule = (() => {
         changeMonth,
         renderFullTracker,
         toggleFavorite,
+        toggleEditMode,
         openReminderModal,
         closeReminderModal,
         saveReminder,

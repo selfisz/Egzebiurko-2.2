@@ -597,8 +597,9 @@ window.APP_VIEWS = {
         <div id="tracker-detail-view" class="absolute inset-0 flex flex-col transition-transform duration-300 translate-x-full bg-white dark:bg-slate-800">
              <div class="flex items-center pr-2 text-xs border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <button onclick="trackerModule.closeCase()" class="px-4 py-3 mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-r dark:border-slate-700"><i data-lucide="arrow-left"></i></button>
-                <div id="tracker-case-label" class="font-mono text-slate-400">Edycja sprawy...</div>
-                <button id="save-case-btn" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
+                <div id="tracker-case-label" class="font-mono text-slate-400">Podgląd sprawy...</div>
+                <button id="edit-case-btn" onclick="trackerModule.toggleEditMode()" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="edit" size="14"></i> Edytuj</button>
+                <button id="save-case-btn" class="hidden px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
              </div>
             <div class="flex-1 p-6 overflow-y-auto custom-scroll">
                  <div class="max-w-2xl mx-auto space-y-4">
