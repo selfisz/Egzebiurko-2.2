@@ -301,8 +301,11 @@ const trackerModule = (() => {
 
             const sortable = new Sortable(col, {
                 group: 'tracker-kanban',
-                animation: 150,
-                ghostClass: 'opacity-50',
+                animation: 200,
+                ghostClass: 'opacity-30',
+                dragClass: 'dragging',
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                forceFallback: false,
                 onEnd: handleKanbanDrop,
             });
 
@@ -334,9 +337,11 @@ const trackerModule = (() => {
         }
 
         await saveCaseToDB(caseData);
+        
+        // Szybsze odświeżenie bez pełnego re-renderu
+        await loadCases();
         renderFullTracker(document.getElementById('trackerSearch')?.value || '');
-        renderCalendar();
-
+        
         if (window.Toast) {
             const label = targetColumn === 'new'
                 ? 'Nowa'
@@ -931,6 +936,7 @@ const trackerModule = (() => {
         toggleEditMode,
         toggleCaseSelection,
         selectAllCases,
+        toggleBulkMenu,
         bulkUpdateStatus,
         bulkToggleUrgent,
         openReminderModal,

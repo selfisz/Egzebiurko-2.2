@@ -637,3 +637,20 @@ button[onclick*="exportToPDF"]:hover {
   background: #1e293b;
   border-color: #334155;
 }
+
+/* Drag & Drop - lepsze animacje */
+.kanban-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg) scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  cursor: grabbing !important;
+}
+
+.kanban-column {
+  transition: background-color 0.2s ease;
+}
+
+.kanban-column.sortable-drag-over {
+  background-color: rgba(99, 102, 241, 0.05);
+  border: 2px dashed rgba(99, 102, 241, 0.3);
+}
