@@ -579,7 +579,7 @@ window.APP_VIEWS = {
                 <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
                 <div class="flex items-center gap-2">
                     <button onclick="trackerModule.selectAllCases()" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
-                        <i data-lucide="check-square" size="14"></i> Zaznacz
+                        <i data-lucide="check-square" size="14"></i> Zaznacz wszystko
                     </button>
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
