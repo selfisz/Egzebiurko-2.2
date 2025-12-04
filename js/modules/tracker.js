@@ -10,6 +10,7 @@ const trackerModule = (() => {
     let currentCaseTags = [];
     const PREDEFINED_TAGS = [];
     let kanbanSortables = [];
+    let bulkMode = false;
 
     async function getDB() {
         if (!state.db) await initDB();
@@ -62,7 +63,7 @@ const trackerModule = (() => {
 
         return `
             <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
-                <input type="checkbox" class="case-checkbox mr-3 w-4 h-4 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
+                <input type="checkbox" class="case-checkbox hidden mr-3 w-4 h-4 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -468,11 +469,31 @@ const trackerModule = (() => {
             }
         });
         updateBulkActionsBar();
+        
+        // Zamknij menu po wyborze opcji
+        const menu = document.getElementById('bulk-select-menu');
+        if (menu) menu.classList.add('hidden');
     }
 
     function toggleBulkMenu() {
+        bulkMode = !bulkMode;
         const menu = document.getElementById('bulk-select-menu');
-        if (menu) menu.classList.toggle('hidden');
+        const checkboxes = document.querySelectorAll('.case-checkbox');
+        
+        if (bulkMode) {
+            // Włącz tryb masowy: pokaż checkboxy i menu
+            checkboxes.forEach(cb => cb.classList.remove('hidden'));
+            if (menu) menu.classList.remove('hidden');
+        } else {
+            // Wyłącz tryb masowy: ukryj checkboxy i menu, wyczyść zaznaczenia
+            checkboxes.forEach(cb => {
+                cb.classList.add('hidden');
+                cb.checked = false;
+            });
+            if (menu) menu.classList.add('hidden');
+            selectedCases.clear();
+            updateBulkActionsBar();
+        }
     }
 
     function updateBulkActionsBar() {
