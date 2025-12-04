@@ -220,39 +220,52 @@ const trackerModule = (() => {
             return;
         }
 
-        // AKTYWNE: dwie kolumny kanban (Nowe, W toku)
+        // AKTYWNE: trzy kolumny kanban (Nowe, W toku, Pilne)
         listEl.innerHTML = `
-            <div id="tracker-kanban" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="kanban-column" data-status="new">
+            <div id="tracker-kanban" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="kanban-column" data-column="new">
                     <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
                         <span>Nowe</span>
                     </div>
-                    <div id="tracker-col-new" class="space-y-3" data-status="new"></div>
+                    <div id="tracker-col-new" class="space-y-3" data-column="new"></div>
                 </div>
-                <div class="kanban-column" data-status="in-progress">
+                <div class="kanban-column" data-column="in-progress">
                     <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
                         <span>W toku</span>
                     </div>
-                    <div id="tracker-col-in-progress" class="space-y-3" data-status="in-progress"></div>
+                    <div id="tracker-col-in-progress" class="space-y-3" data-column="in-progress"></div>
+                </div>
+                <div class="kanban-column" data-column="urgent">
+                    <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
+                        <span>Pilne</span>
+                    </div>
+                    <div id="tracker-col-urgent" class="space-y-3" data-column="urgent"></div>
                 </div>
             </div>`;
 
         const colNew = document.getElementById('tracker-col-new');
         const colInProgress = document.getElementById('tracker-col-in-progress');
+        const colUrgent = document.getElementById('tracker-col-urgent');
 
-        const byStatus = {
+        const buckets = {
             new: [],
             'in-progress': [],
+            urgent: [],
         };
 
         filteredCases.forEach(c => {
-            const s = (c.status || 'new') === 'finished' ? 'in-progress' : (c.status || 'new');
-            if (!byStatus[s]) byStatus[s] = [];
-            byStatus[s].push(c);
+            if (c.urgent) {
+                buckets.urgent.push(c);
+            } else if ((c.status || 'new') === 'in-progress') {
+                buckets['in-progress'].push(c);
+            } else {
+                buckets.new.push(c);
+            }
         });
 
-        if (colNew) colNew.innerHTML = (byStatus.new || []).map(createCaseBinder).join('');
-        if (colInProgress) colInProgress.innerHTML = (byStatus['in-progress'] || []).map(createCaseBinder).join('');
+        if (colNew) colNew.innerHTML = (buckets.new || []).map(createCaseBinder).join('');
+        if (colInProgress) colInProgress.innerHTML = (buckets['in-progress'] || []).map(createCaseBinder).join('');
+        if (colUrgent) colUrgent.innerHTML = (buckets.urgent || []).map(createCaseBinder).join('');
 
         countEl.textContent = `${filteredCases.length} spraw`;
 
@@ -281,8 +294,8 @@ const trackerModule = (() => {
         kanbanSortables.forEach(s => s.destroy());
         kanbanSortables = [];
 
-        ['new', 'in-progress', 'finished'].forEach(status => {
-            const col = document.getElementById(`tracker-col-${status}`);
+        ['new', 'in-progress', 'urgent'].forEach(column => {
+            const col = document.getElementById(`tracker-col-${column}`);
             if (!col) return;
 
             const sortable = new Sortable(col, {
@@ -301,8 +314,8 @@ const trackerModule = (() => {
         if (!itemEl) return;
 
         const caseIdAttr = itemEl.getAttribute('data-case-id');
-        const newStatus = evt.to && evt.to.getAttribute('data-status');
-        if (!caseIdAttr || !newStatus) return;
+        const targetColumn = evt.to && evt.to.getAttribute('data-column');
+        if (!caseIdAttr || !targetColumn) return;
 
         const caseId = parseInt(caseIdAttr, 10);
         if (Number.isNaN(caseId)) return;
@@ -310,18 +323,26 @@ const trackerModule = (() => {
         const caseData = cases.find(c => c.id === caseId);
         if (!caseData) return;
 
-        const oldStatus = caseData.status || 'new';
-        if (oldStatus === newStatus) return;
-
-        caseData.status = newStatus;
-        caseData.archived = newStatus === 'finished';
+        // Aktualizacja statusu / pilności w zależności od kolumny
+        if (targetColumn === 'urgent') {
+            caseData.urgent = true;
+            if (!caseData.status) caseData.status = 'in-progress';
+        } else {
+            caseData.status = targetColumn; // 'new' lub 'in-progress'
+            caseData.urgent = false;
+        }
 
         await saveCaseToDB(caseData);
         renderFullTracker(document.getElementById('trackerSearch')?.value || '');
         renderCalendar();
 
         if (window.Toast) {
-            window.Toast.info('Zmieniono status sprawy na: ' + (newStatus === 'new' ? 'Nowa' : newStatus === 'in-progress' ? 'W toku' : 'Zakończona'));
+            const label = targetColumn === 'new'
+                ? 'Nowa'
+                : targetColumn === 'in-progress'
+                    ? 'W toku'
+                    : 'Pilna';
+            window.Toast.info('Zmieniono status sprawy na: ' + label);
         }
     }
 
@@ -426,20 +447,32 @@ const trackerModule = (() => {
         updateBulkActionsBar();
     }
 
-    function selectAllCases() {
+    function selectAllCases(forceChecked) {
         const checkboxes = document.querySelectorAll('.case-checkbox');
-        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        let targetChecked;
+
+        if (typeof forceChecked === 'boolean') {
+            targetChecked = forceChecked;
+        } else {
+            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+            targetChecked = !allChecked;
+        }
         
         checkboxes.forEach(cb => {
             const caseId = parseInt(cb.getAttribute('data-case-id'));
-            cb.checked = !allChecked;
-            if (!allChecked) {
+            cb.checked = targetChecked;
+            if (targetChecked) {
                 selectedCases.add(caseId);
             } else {
                 selectedCases.delete(caseId);
             }
         });
         updateBulkActionsBar();
+    }
+
+    function toggleBulkMenu() {
+        const menu = document.getElementById('bulk-select-menu');
+        if (menu) menu.classList.toggle('hidden');
     }
 
     function updateBulkActionsBar() {

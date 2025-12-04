@@ -578,9 +578,16 @@ window.APP_VIEWS = {
             <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
                 <div class="flex items-center gap-2">
-                    <button onclick="trackerModule.selectAllCases()" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
-                        <i data-lucide="check-square" size="14"></i> Zaznacz wszystko
-                    </button>
+                    <div class="relative">
+                        <button onclick="trackerModule.toggleBulkMenu()" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
+                            <i data-lucide="check-square" size="14"></i> Zaznacz
+                            <i data-lucide="chevron-down" size="14"></i>
+                        </button>
+                        <div id="bulk-select-menu" class="hidden absolute right-0 mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
+                            <button onclick="trackerModule.selectAllCases(true); trackerModule.toggleBulkMenu();" class="w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 dark:hover:bg-slate-700">Zaznacz wszystko</button>
+                            <button onclick="trackerModule.selectAllCases(false); trackerModule.toggleBulkMenu();" class="w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 dark:hover:bg-slate-700">Odznacz wszystko</button>
+                        </div>
+                    </div>
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
                         <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors" oninput="trackerModule.renderFullTracker(this.value)">
