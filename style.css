@@ -654,3 +654,16 @@ button[onclick*="exportToPDF"]:hover {
   background-color: rgba(99, 102, 241, 0.05);
   border: 2px dashed rgba(99, 102, 241, 0.3);
 }
+
+/* Drag & Drop - lepsza responsywność */
+.kanban-item.chosen {
+  cursor: grabbing !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.kanban-item {
+  cursor: grab;
+  user-select: none;
+}

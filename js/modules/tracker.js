@@ -63,7 +63,7 @@ const trackerModule = (() => {
 
         return `
             <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
-                <input type="checkbox" class="case-checkbox hidden mr-3 w-4 h-4 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
+                <input type="checkbox" class="case-checkbox hidden mr-3 w-5 h-5 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -301,11 +301,16 @@ const trackerModule = (() => {
 
             const sortable = new Sortable(col, {
                 group: 'tracker-kanban',
-                animation: 200,
+                animation: 150,
+                delay: 0,
+                delayOnTouchOnly: false,
+                touchStartThreshold: 3,
                 ghostClass: 'opacity-30',
                 dragClass: 'dragging',
+                chosenClass: 'chosen',
                 easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 forceFallback: false,
+                fallbackTolerance: 3,
                 onEnd: handleKanbanDrop,
             });
 
