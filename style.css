@@ -305,3 +305,98 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   color: #1c1917;
   margin-bottom: 8px;
 }
+/* ===== NOWY STYL TERMINARZA ===== */
+
+/* KONTENER GŁÓWNY */
+.view-tracker {
+  background: #f5f5f4; /* kolor papieru */
+  background-image: linear-gradient(to bottom, #f5f5f4 0%, #e7e5e4 100%);
+}
+
+/* LISTA SPRAW - TECZKI */
+.case-folder {
+  background: white;
+  border-left: 12px solid #d6d3d1; /* kolor grzbietu teczki */
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+  padding: 12px;
+  position: relative;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+
+.case-folder:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Kolory grzbietów */
+.case-folder-urgent {
+  border-left-color: #ef4444; /* pilne - czerwony */
+}
+
+.case-folder-favorite {
+  border-left-color: #f59e0b; /* ulubione - pomarańcz */
+}
+
+.case-folder-archived {
+  border-left-color: #9ca3af; /* archiwum - szary */
+}
+
+/* Zakładka ulubionej teczki */
+.case-folder-favorite::after {
+  content: "★";
+  color: #f59e0b;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font-size: 14px;
+}
+
+/* WIDOK SZCZEGÓŁÓW - OTWARTA TECZKA */
+.case-detail-container {
+  background: white;
+  border-left: 24px solid #d6d3d1; /* gruby grzbiet */
+  border-radius: 0 8px 8px 0;
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+/* Zakładki w otwartej teczce */
+.case-tabs {
+  display: flex;
+  border-bottom: 1px solid #e7e5e4;
+  background: #f5f5f4;
+}
+
+.case-tab {
+  padding: 12px 16px;
+  background: #f5f5f4;
+  border-right: 1px solid #e7e5e4;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #57534e;
+}
+
+.case-tab-active {
+  background: white;
+  color: #1c1917;
+  border-top: 2px solid #57534e;
+}
+
+/* Etykiety w teczkach */
+.case-label {
+  font-size: 11px;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.case-value {
+  font-size: 14px;
+  color: #1c1917;
+  margin-bottom: 8px;
+}
