@@ -7,6 +7,8 @@ const trackerModule = (() => {
     let currentDate = new Date();
     let currentFilter = { date: null };
     const STORE_NAME = 'tracker';
+    let currentCaseTags = [];
+    const PREDEFINED_TAGS = [];
 
     async function getDB() {
         if (!state.db) await initDB();
@@ -66,14 +68,60 @@ const trackerModule = (() => {
         `;
     }
 
+    function renderTagsUI() {
+        const container = document.getElementById('trTagsContainer');
+        const input = document.getElementById('trTagInput');
+        if (!container || !input) return;
+
+        const allTags = Array.from(new Set([...(PREDEFINED_TAGS || []), ...currentCaseTags]));
+        container.innerHTML = allTags.map(tag => {
+            const isActive = currentCaseTags.includes(tag);
+            const base = 'px-2.5 py-1 rounded-full text-[11px] border cursor-pointer transition-colors';
+            const activeClasses = 'bg-indigo-600 text-white border-indigo-600';
+            const inactiveClasses = 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30';
+            return `<button type="button" class="${base} ${isActive ? activeClasses : inactiveClasses}" data-tag="${tag}">${tag}</button>`;
+        }).join('');
+
+        Array.from(container.querySelectorAll('button[data-tag]')).forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tag = btn.getAttribute('data-tag');
+                if (!tag) return;
+                if (currentCaseTags.includes(tag)) {
+                    currentCaseTags = currentCaseTags.filter(t => t !== tag);
+                } else {
+                    currentCaseTags.push(tag);
+                }
+                renderTagsUI();
+            });
+        });
+
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = input.value.trim();
+                if (!value) return;
+                if (!currentCaseTags.includes(value)) {
+                    currentCaseTags.push(value);
+                }
+                input.value = '';
+                renderTagsUI();
+            }
+        };
+    }
+
     function renderFullTracker(filter = '') {
         const listEl = document.getElementById('tracker-list');
         const countEl = document.getElementById('tracker-case-count');
         if (!listEl || !countEl) return;
 
+        const statusFilterEl = document.getElementById('trFilterStatus');
+        const priorityFilterEl = document.getElementById('trFilterPriority');
+        const urgentFilterEl = document.getElementById('trFilterUrgent');
+        const favoriteFilterEl = document.getElementById('trFilterFavorite');
+        const tagFilterEl = document.getElementById('trFilterTag');
+
         let filteredCases = cases.filter(c => c.archived === isArchivedView);
         
-        // Filter by search term
         if (filter) {
             const searchTerm = filter.toLowerCase();
             filteredCases = filteredCases.filter(c =>
@@ -81,13 +129,54 @@ const trackerModule = (() => {
             );
         }
 
+        if (statusFilterEl && statusFilterEl.value !== 'all') {
+            filteredCases = filteredCases.filter(c => (c.status || 'new') === statusFilterEl.value);
+        }
+
+        if (priorityFilterEl && priorityFilterEl.value !== 'all') {
+            filteredCases = filteredCases.filter(c => (c.priority || 'medium') === priorityFilterEl.value);
+        }
+
+        if (urgentFilterEl && urgentFilterEl.checked) {
+            filteredCases = filteredCases.filter(c => c.urgent);
+        }
+
+        if (favoriteFilterEl && favoriteFilterEl.checked) {
+            filteredCases = filteredCases.filter(c => c.isFavorite);
+        }
+
+        if (tagFilterEl) {
+            const previousValue = tagFilterEl.value || 'all';
+            const tagSet = new Set();
+            cases.forEach(c => {
+                if (Array.isArray(c.tags)) {
+                    c.tags.forEach(t => tagSet.add(t));
+                }
+            });
+            const options = ['<option value="all">Wszystkie tagi</option>']
+                .concat(Array.from(tagSet).sort().map(tag => `<option value="${tag}">${tag}</option>`));
+            tagFilterEl.innerHTML = options.join('');
+            if (previousValue !== 'all' && tagSet.has(previousValue)) {
+                tagFilterEl.value = previousValue;
+            } else {
+                tagFilterEl.value = 'all';
+            }
+            if (tagFilterEl.value !== 'all') {
+                const selectedTag = tagFilterEl.value;
+                filteredCases = filteredCases.filter(c => Array.isArray(c.tags) && c.tags.includes(selectedTag));
+            }
+        }
+
         const sortEl = document.getElementById('trSort');
         const sortMethod = sortEl ? sortEl.value : 'deadline';
+        const priorityOrder = { low: 0, medium: 1, high: 2 };
         filteredCases.sort((a, b) => {
             if (a.urgent !== b.urgent) return b.urgent - a.urgent;
             switch (sortMethod) {
                 case 'deadline': return new Date(a.date) - new Date(b.date);
                 case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
+                case 'priority':
+                    return (priorityOrder[(b.priority || 'medium')] || 0) - (priorityOrder[(a.priority || 'medium')] || 0);
                 case 'no': return (a.no || '').localeCompare(b.no || '');
                 default: return 0;
             }
@@ -121,13 +210,17 @@ const trackerModule = (() => {
         document.getElementById('trDate').value = caseData.date || '';
         document.getElementById('trStatus').value = caseData.status || 'new';
         document.getElementById('trUrgent').checked = caseData.urgent || false;
+        const priorityEl = document.getElementById('trPriority');
+        if (priorityEl) priorityEl.value = caseData.priority || 'medium';
         document.getElementById('trNote').value = caseData.note || '';
         document.getElementById('tracker-case-label').textContent = `Edycja: ${caseData.no}`;
+
+        currentCaseTags = Array.isArray(caseData.tags) ? caseData.tags.slice() : [];
+        renderTagsUI();
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
         document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
         
-        // Load attachments
         if (typeof renderAttachments === 'function') {
             renderAttachments(id);
         }
@@ -172,6 +265,7 @@ const trackerModule = (() => {
 
     async function saveCase() {
         const status = document.getElementById('trStatus').value;
+        const priorityEl = document.getElementById('trPriority');
         const caseData = {
             id: currentCaseId,
             no: document.getElementById('trNo').value.trim(),
@@ -180,8 +274,10 @@ const trackerModule = (() => {
             date: document.getElementById('trDate').value,
             status: status,
             urgent: document.getElementById('trUrgent').checked,
+            priority: priorityEl ? priorityEl.value : 'medium',
             note: document.getElementById('trNote').value.trim(),
             archived: status === 'finished',
+            tags: currentCaseTags.slice(),
         };
 
         if (!caseData.no || !caseData.date) {
@@ -244,7 +340,11 @@ const trackerModule = (() => {
         document.getElementById('trDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('trStatus').value = 'new';
         document.getElementById('trUrgent').checked = false;
+        const priorityEl = document.getElementById('trPriority');
+        if (priorityEl) priorityEl.value = 'medium';
         document.getElementById('trNote').value = '';
+        currentCaseTags = [];
+        renderTagsUI();
         document.getElementById('tracker-case-label').textContent = 'Nowa Sprawa';
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
@@ -302,6 +402,7 @@ const trackerModule = (() => {
         document.getElementById('reminderText').value = '';
         closeReminderModal();
         renderCalendar();
+        renderRemindersList();
     }
 
     function renderCalendar() {
@@ -378,6 +479,15 @@ const trackerModule = (() => {
         renderCalendar();
     }
 
+    function focusDate(dateStr) {
+        const parts = dateStr.split('-').map(p => parseInt(p, 10));
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            currentDate = new Date(parts[0], parts[1] - 1, 1);
+        }
+        renderCalendar();
+        filterByDate(dateStr);
+    }
+
     function filterByDate(dateStr) {
         if (currentFilter.date === dateStr) {
             currentFilter.date = null;
@@ -389,9 +499,77 @@ const trackerModule = (() => {
     }
 
     async function loadCases() {
-        cases = await getAllCases();
+        const all = await getAllCases();
+        cases = all.map(c => ({
+            ...c,
+            priority: c.priority || 'medium',
+            tags: Array.isArray(c.tags) ? c.tags : [],
+        }));
         renderFullTracker();
         renderCalendar();
+    }
+
+    function renderRemindersList() {
+        const container = document.getElementById('tracker-reminders-list');
+        if (!container) return;
+
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+
+        const rangeEl = document.getElementById('trRemindersRange');
+        const futureOnlyEl = document.getElementById('trRemindersFutureOnly');
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let maxDate = null;
+        const rangeValue = rangeEl ? rangeEl.value : '7';
+        if (rangeValue !== 'all') {
+            const days = parseInt(rangeValue, 10) || 7;
+            maxDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+        const futureOnly = !futureOnlyEl || futureOnlyEl.checked;
+
+        let items = [];
+        Object.entries(reminders).forEach(([dateStr, texts]) => {
+            if (!Array.isArray(texts)) return;
+            texts.forEach(text => {
+                items.push({ date: dateStr, text });
+            });
+        });
+
+        items = items.filter(item => {
+            const d = new Date(item.date);
+            if (isNaN(d.getTime())) return false;
+            const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            if (futureOnly && dDate < today) return false;
+            if (maxDate && dDate > maxDate) return false;
+            return true;
+        });
+
+        items.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (items.length === 0) {
+            container.innerHTML = '<div class="text-[11px] text-slate-400 text-center py-4">Brak przypomnień w wybranym zakresie</div>';
+            return;
+        }
+
+        container.innerHTML = items.map(item => {
+            const d = new Date(item.date);
+            const dateLabel = isNaN(d.getTime()) ? item.date : d.toLocaleDateString('pl-PL');
+            const safeText = item.text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `
+                <button type="button" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors" onclick="trackerModule.focusDate('${item.date}')">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] font-mono text-slate-500">${dateLabel}</span>
+                    </div>
+                    <div class="text-[12px] text-slate-700 dark:text-slate-200 truncate">${safeText}</div>
+                </button>
+            `;
+        }).join('');
     }
 
     async function initTracker() {
@@ -400,10 +578,28 @@ const trackerModule = (() => {
         const sortEl = document.getElementById('trSort');
         const searchEl = document.getElementById('trackerSearch');
         const saveBtn = document.getElementById('save-case-btn');
+        const statusFilterEl = document.getElementById('trFilterStatus');
+        const priorityFilterEl = document.getElementById('trFilterPriority');
+        const urgentFilterEl = document.getElementById('trFilterUrgent');
+        const favoriteFilterEl = document.getElementById('trFilterFavorite');
+        const tagFilterEl = document.getElementById('trFilterTag');
+        const remindersRangeEl = document.getElementById('trRemindersRange');
+        const remindersFutureEl = document.getElementById('trRemindersFutureOnly');
         
         if (sortEl) sortEl.addEventListener('change', () => renderFullTracker());
         if (searchEl) searchEl.addEventListener('input', (e) => renderFullTracker(e.target.value));
         if (saveBtn) saveBtn.addEventListener('click', saveCase);
+        const rerenderList = () => renderFullTracker(searchEl ? searchEl.value : '');
+        if (statusFilterEl) statusFilterEl.addEventListener('change', rerenderList);
+        if (priorityFilterEl) priorityFilterEl.addEventListener('change', rerenderList);
+        if (urgentFilterEl) urgentFilterEl.addEventListener('change', rerenderList);
+        if (favoriteFilterEl) favoriteFilterEl.addEventListener('change', rerenderList);
+        if (tagFilterEl) tagFilterEl.addEventListener('change', rerenderList);
+
+        if (remindersRangeEl) remindersRangeEl.addEventListener('change', renderRemindersList);
+        if (remindersFutureEl) remindersFutureEl.addEventListener('change', renderRemindersList);
+
+        renderRemindersList();
         
         showArchived(false);
     }
@@ -424,6 +620,7 @@ const trackerModule = (() => {
         closeReminderModal,
         saveReminder,
         filterByDate,
+        focusDate,
     };
 })();
 
