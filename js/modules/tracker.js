@@ -54,8 +54,13 @@ const trackerModule = (() => {
                </div>`
             : '';
 
+        // Klasy dla efektu teczki
+        let folderClasses = 'case-binder';
+        if (caseData.urgent) folderClasses += ' urgent';
+        if (caseData.isFavorite) folderClasses += ' favorite';
+
         return `
-            <div class="case-binder flex items-center p-3 rounded-xl border ${urgentStyle} bg-white dark:bg-slate-800 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer transition-all">
+            <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>

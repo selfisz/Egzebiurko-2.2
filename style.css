@@ -400,3 +400,83 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   color: #1c1917;
   margin-bottom: 8px;
 }
+
+/* ===== FIZYCZNA TECZKA Z ZAKŁADKAMI (OPCJA A) ===== */
+
+.case-binder {
+  position: relative;
+  background: linear-gradient(135deg, #fdfcfb 0%, #f7f6f4 100%);
+  border-left: 8px solid #d4d1cd;
+  box-shadow: 
+    2px 2px 4px rgba(0,0,0,0.1),
+    inset -1px 0 2px rgba(0,0,0,0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.case-binder::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+}
+
+.case-binder:hover {
+  transform: translateY(-4px) translateX(2px);
+  box-shadow: 
+    4px 8px 12px rgba(0,0,0,0.15),
+    inset -1px 0 2px rgba(0,0,0,0.05);
+  border-left-color: #6366f1;
+}
+
+/* Zakładka u góry teczki */
+.case-binder::after {
+  content: attr(data-case-no);
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 4px rgba(99, 102, 241, 0.3);
+  letter-spacing: 0.5px;
+}
+
+/* Pilne sprawy - czerwona zakładka */
+.case-binder.urgent::after {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 -2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.case-binder.urgent {
+  border-left-color: #ef4444;
+}
+
+/* Ulubione sprawy - złota zakładka */
+.case-binder.favorite::after {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 -2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.case-binder.favorite {
+  border-left-color: #f59e0b;
+}
+
+/* Dark mode */
+.dark .case-binder {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-left-color: #475569;
+}
+
+.dark .case-binder::before {
+  background: linear-gradient(to right, rgba(255,255,255,0.05), transparent);
+}
+
+.dark .case-binder:hover {
+  border-left-color: #818cf8;
+}
