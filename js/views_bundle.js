@@ -581,7 +581,18 @@ window.APP_VIEWS = {
                 <!-- Widok szczegółów -->
                 <div id="tracker-detail-view" class="case-detail-container fixed inset-0 z-50 bg-white translate-x-full transition-transform duration-300 ease-in-out">
                     <div class="h-full flex flex-col">
-                        <!-- Zakładki -->
+                        <!-- Nagłówek z przyciskiem powrotu -->
+                        <div class="flex items-center p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
+                            <button onclick="trackerModule.closeCase()" class="p-2 mr-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <i data-lucide="arrow-left"></i>
+                            </button>
+                            <div id="tracker-case-label" class="font-mono text-slate-400">Edycja sprawy...</div>
+                            <button id="save-case-btn" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2">
+                                <i data-lucide="save" size="14"></i> Zapisz
+                            </button>
+                        </div>
+                        
+                        <!-- Zakładki -->                        
                         <div class="case-tabs">
                             <div class="case-tab case-tab-active" onclick="trackerModule.showCaseTab('details')">Dane sprawy</div>
                             <div class="case-tab" onclick="trackerModule.showCaseTab('documents')">Dokumenty</div>
@@ -592,7 +603,71 @@ window.APP_VIEWS = {
                         <div class="flex-1 overflow-y-auto p-6">
                             <!-- Formularz edycji sprawy -->
                             <div id="case-details-tab" class="space-y-4">
-                                {{ ... istniejący formularz edycji ... }}
+                                <!-- Case Form Fields -->
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="col-span-2">
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nr Sprawy</label>
+                                        <input id="trNo" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white font-bold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">UNP</label>
+                                        <input id="trUnp" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Zobowiązany</label>
+                                    <input id="trDebtor" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Wpływu</label>
+                                    <input id="trDate" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                                        <select id="trStatus" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                            <option value="new">Nowa</option>
+                                            <option value="in-progress">W toku</option>
+                                            <option value="finished">Zakończona</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
+                                        <select id="trPriority" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                                            <option value="low">Niski</option>
+                                            <option value="medium" selected>Normalny</option>
+                                            <option value="high">Wysoki</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
+                                    <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                                    <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tagi</label>
+                                    <div id="trTagsContainer" class="flex flex-wrap gap-2 mb-2"></div>
+                                    <input id="trTagInput" type="text" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-700 dark:text-white" placeholder="Dodaj tag i naciśnij Enter">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Notatka</label>
+                                        <button onclick="showNoteTemplateMenu(event)" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center gap-1">
+                                            <i data-lucide="file-plus" size="12"></i> Wstaw szablon
+                                        </button>
+                                    </div>
+                                    <textarea id="trNote" rows="4" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white resize-y"></textarea>
+                                </div>
+                                <div class="border-t pt-4 mt-4 dark:border-slate-700">
+                                    <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">Historia Czynności</h4>
+                                    <div id="trTimeline" class="space-y-2 mb-4">
+                                        <!-- Timeline entries will be injected here -->
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <input id="trTimelineInput" type="text" class="flex-1 p-2.5 border rounded-lg text-xs dark:bg-slate-700 dark:text-white" placeholder="Dodaj czynność i naciśnij Enter">
+                                        <button id="trTimelineAddBtn" class="px-3 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">Dodaj</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Dokumenty -->
