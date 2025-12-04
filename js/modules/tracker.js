@@ -9,6 +9,7 @@ const trackerModule = (() => {
     const STORE_NAME = 'tracker';
     let currentCaseTags = [];
     const PREDEFINED_TAGS = [];
+    let kanbanSortables = [];
 
     async function getDB() {
         if (!state.db) await initDB();
@@ -55,12 +56,12 @@ const trackerModule = (() => {
             : '';
 
         // Klasy dla efektu teczki
-        let folderClasses = 'case-binder';
+        let folderClasses = 'case-binder kanban-item';
         if (caseData.urgent) folderClasses += ' urgent';
         if (caseData.isFavorite) folderClasses += ' favorite';
 
         return `
-            <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}">
+            <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
                 <input type="checkbox" class="case-checkbox mr-3 w-4 h-4 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
@@ -195,10 +196,9 @@ const trackerModule = (() => {
                 default: return 0;
             }
         });
-        
-        listEl.innerHTML = filteredCases.length 
-            ? filteredCases.map(createCaseBinder).join('') 
-            : `<div class="flex flex-col items-center justify-center py-16 text-center">
+
+        if (!filteredCases.length) {
+            listEl.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-center">
                 <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 empty-state-icon">
                     <i data-lucide="folder-open" size="40" class="text-slate-300 dark:text-slate-600"></i>
                 </div>
@@ -208,8 +208,109 @@ const trackerModule = (() => {
                     <i data-lucide="plus" size="16" class="inline mr-1"></i> Dodaj sprawę
                 </button>
             </div>`;
+            countEl.textContent = '0 spraw';
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // Przygotuj szablon trzech kolumn kanban
+        listEl.innerHTML = `
+            <div id="tracker-kanban" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="kanban-column" data-status="new">
+                    <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
+                        <span>Nowe</span>
+                    </div>
+                    <div id="tracker-col-new" class="space-y-3" data-status="new"></div>
+                </div>
+                <div class="kanban-column" data-status="in-progress">
+                    <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
+                        <span>W toku</span>
+                    </div>
+                    <div id="tracker-col-in-progress" class="space-y-3" data-status="in-progress"></div>
+                </div>
+                <div class="kanban-column" data-status="finished">
+                    <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
+                        <span>Zakończone</span>
+                    </div>
+                    <div id="tracker-col-finished" class="space-y-3" data-status="finished"></div>
+                </div>
+            </div>`;
+
+        const colNew = document.getElementById('tracker-col-new');
+        const colInProgress = document.getElementById('tracker-col-in-progress');
+        const colFinished = document.getElementById('tracker-col-finished');
+
+        const byStatus = {
+            new: [],
+            'in-progress': [],
+            finished: [],
+        };
+
+        filteredCases.forEach(c => {
+            const s = c.status || 'new';
+            if (!byStatus[s]) byStatus[s] = [];
+            byStatus[s].push(c);
+        });
+
+        if (colNew) colNew.innerHTML = (byStatus.new || []).map(createCaseBinder).join('');
+        if (colInProgress) colInProgress.innerHTML = (byStatus['in-progress'] || []).map(createCaseBinder).join('');
+        if (colFinished) colFinished.innerHTML = (byStatus.finished || []).map(createCaseBinder).join('');
+
         countEl.textContent = `${filteredCases.length} spraw`;
+
         if (window.lucide) lucide.createIcons();
+        initKanbanDragAndDrop();
+    }
+
+    function initKanbanDragAndDrop() {
+        if (!window.Sortable) return;
+
+        // Usuń poprzednie instancje
+        kanbanSortables.forEach(s => s.destroy());
+        kanbanSortables = [];
+
+        ['new', 'in-progress', 'finished'].forEach(status => {
+            const col = document.getElementById(`tracker-col-${status}`);
+            if (!col) return;
+
+            const sortable = new Sortable(col, {
+                group: 'tracker-kanban',
+                animation: 150,
+                ghostClass: 'opacity-50',
+                onEnd: handleKanbanDrop,
+            });
+
+            kanbanSortables.push(sortable);
+        });
+    }
+
+    async function handleKanbanDrop(evt) {
+        const itemEl = evt.item;
+        if (!itemEl) return;
+
+        const caseIdAttr = itemEl.getAttribute('data-case-id');
+        const newStatus = evt.to && evt.to.getAttribute('data-status');
+        if (!caseIdAttr || !newStatus) return;
+
+        const caseId = parseInt(caseIdAttr, 10);
+        if (Number.isNaN(caseId)) return;
+
+        const caseData = cases.find(c => c.id === caseId);
+        if (!caseData) return;
+
+        const oldStatus = caseData.status || 'new';
+        if (oldStatus === newStatus) return;
+
+        caseData.status = newStatus;
+        caseData.archived = newStatus === 'finished';
+
+        await saveCaseToDB(caseData);
+        renderFullTracker(document.getElementById('trackerSearch')?.value || '');
+        renderCalendar();
+
+        if (window.Toast) {
+            window.Toast.info('Zmieniono status sprawy na: ' + (newStatus === 'new' ? 'Nowa' : newStatus === 'in-progress' ? 'W toku' : 'Zakończona'));
+        }
     }
 
     let isEditMode = false;
