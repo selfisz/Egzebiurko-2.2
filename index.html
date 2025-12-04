@@ -192,6 +192,16 @@
                         <div id="notifList" class="max-h-64 overflow-y-auto custom-scroll p-1"></div>
                     </div>
                 </div>
+
+                <div class="relative">
+                    <button onclick="trackerModule.toggleTodayQuickPlan()" class="p-2 bg-white dark:bg-slate-800 rounded-full shadow-md hover:scale-105 transition-transform text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700" title="Plan na dziś">
+                        <i data-lucide="check-square" size="20"></i>
+                    </button>
+                    <div id="todayPlanPopover" class="hidden absolute right-0 top-12 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade z-50">
+                        <div class="p-3 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-bold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Plan na dziś</div>
+                        <div id="todayPlanList" class="max-h-64 overflow-y-auto custom-scroll py-1"></div>
+                    </div>
+                </div>
             </div>
         </header>
 

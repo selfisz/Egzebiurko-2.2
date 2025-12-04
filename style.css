@@ -481,6 +481,39 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   border-left-color: #818cf8;
 }
 
+/* Checkbox w trybie operacji masowych w teczkach */
+.case-binder .case-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+  background-color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+}
+
+.case-binder .case-checkbox:not(.hidden):hover {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+.case-binder .case-checkbox:checked {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.case-binder .case-checkbox:checked::before {
+  content: "✓";
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* ===== KARTY INFORMACYJNE PODGLĄDU SPRAWY ===== */
 .case-preview-card {
   background: white;

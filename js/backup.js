@@ -161,14 +161,36 @@ async function exportDataSecure() {
     const passwordInput = document.getElementById('backupPassword');
     
     const data = {
+        // Główne store'y IndexedDB
         tracker: await state.db.getAll('tracker'),
         garage: await state.db.getAll('garage'),
         notes: await state.db.getAll('notes'),
+        templates: await state.db.getAll('templates'),
+        drafts: await state.db.getAll('drafts'),
+        bailiffs: await state.db.getAll('bailiffs'),
+        reminders: await state.db.getAll('reminders'),
+        terrain_cases: await state.db.getAll('terrain_cases'),
+        attachments: await state.db.getAll('attachments'),
+
+        // Wybrane struktury z localStorage (dla kompatybilności wstecz)
         links: JSON.parse(localStorage.getItem('lex_links') || '[]'),
         dicts: {
             addresses: JSON.parse(localStorage.getItem('lex_addresses') || '[]'),
             signatures: JSON.parse(localStorage.getItem('lex_signatures') || '[]')
-        }
+        },
+        // Dodatkowe dane z Terminarza
+        trackerDailyPlan: JSON.parse(localStorage.getItem('dailyPlan') || '[]'),
+        trackerReminders: JSON.parse(localStorage.getItem('tracker_reminders') || '{}'),
+
+        // Pełny snapshot localStorage (wszystkie ustawienia i dane per moduł)
+        rawLocalStorage: (function () {
+            const all = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                all[key] = localStorage.getItem(key);
+            }
+            return all;
+        })()
     };
     
     let fileContent;
@@ -232,7 +254,7 @@ async function importDataSecure(event) {
             }
             
             if (confirm("To nadpisze obecne dane. Kontynuować?")) {
-                const tx = state.db.transaction(['tracker', 'garage', 'notes'], 'readwrite');
+                const tx = state.db.transaction(['tracker', 'garage', 'notes', 'templates', 'drafts', 'bailiffs', 'reminders', 'terrain_cases'], 'readwrite');
 
                 // Support both old 'cases' and new 'tracker' format
                 const trackerData = data.tracker || data.cases || [];
@@ -248,11 +270,51 @@ async function importDataSecure(event) {
                     await tx.objectStore('notes').clear();
                     for (const i of data.notes) await tx.objectStore('notes').put(i);
                 }
+                if (data.templates) {
+                    await tx.objectStore('templates').clear();
+                    for (const i of data.templates) await tx.objectStore('templates').put(i);
+                }
+                if (data.drafts) {
+                    await tx.objectStore('drafts').clear();
+                    for (const i of data.drafts) await tx.objectStore('drafts').put(i);
+                }
+                if (data.bailiffs) {
+                    await tx.objectStore('bailiffs').clear();
+                    for (const i of data.bailiffs) await tx.objectStore('bailiffs').put(i);
+                }
+                if (data.reminders) {
+                    await tx.objectStore('reminders').clear();
+                    for (const i of data.reminders) await tx.objectStore('reminders').put(i);
+                }
+                if (data.terrain_cases) {
+                    await tx.objectStore('terrain_cases').clear();
+                    for (const i of data.terrain_cases) await tx.objectStore('terrain_cases').put(i);
+                }
 
+                // Stare pola z localStorage dla kompatybilności
                 if (data.links) localStorage.setItem('lex_links', JSON.stringify(data.links));
                 if (data.dicts) {
                     localStorage.setItem('lex_addresses', JSON.stringify(data.dicts.addresses || []));
                     localStorage.setItem('lex_signatures', JSON.stringify(data.dicts.signatures || []));
+                }
+
+                // Przywracanie dodatkowych danych Terminarza
+                if (Array.isArray(data.trackerDailyPlan)) {
+                    localStorage.setItem('dailyPlan', JSON.stringify(data.trackerDailyPlan));
+                }
+                if (data.trackerReminders) {
+                    localStorage.setItem('tracker_reminders', JSON.stringify(data.trackerReminders));
+                }
+
+                // Pełny snapshot localStorage: przywróć KAŻDY klucz zapisany w backupie
+                if (data.rawLocalStorage && typeof data.rawLocalStorage === 'object') {
+                    Object.keys(data.rawLocalStorage).forEach(key => {
+                        try {
+                            localStorage.setItem(key, data.rawLocalStorage[key]);
+                        } catch (e) {
+                            console.warn('Nie udało się przywrócić localStorage key', key, e);
+                        }
+                    });
                 }
 
                 alert("Przywrócono dane!");

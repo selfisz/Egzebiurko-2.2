@@ -64,7 +64,7 @@ const trackerModule = (() => {
         if (caseData.isFavorite) folderClasses += ' favorite';
 
         return `
-            <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
+            <div class="${folderClasses} flex items-center py-3 pl-3 pr-5 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
                 <input type="checkbox" class="case-checkbox hidden mr-3 w-5 h-5 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
@@ -991,8 +991,25 @@ const trackerModule = (() => {
         const d = new Date(dateStr);
         dateDisplay.textContent = `Plan na ${d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`;
         
-        // Sprawy na ten dzień
-        const casesOnDay = cases.filter(c => c.date === dateStr && !c.archived);
+        // Sprawy na ten dzień: połączenie spraw z terminem = data
+        // oraz spraw ręcznie dodanych do planu dnia (dailyPlan z caseId)
+        const baseCases = cases.filter(c => c.date === dateStr && !c.archived);
+        const plannedCaseTasks = dailyPlan.filter(t => t.date === dateStr && t.caseId);
+        const plannedCases = plannedCaseTasks
+            .map(t => cases.find(c => c.id === t.caseId))
+            .filter(c => c && !c.archived);
+
+        // Usuń duplikaty po id
+        const seenIds = new Set(baseCases.map(c => c.id));
+        const mergedCases = [...baseCases];
+        for (const c of plannedCases) {
+            if (!seenIds.has(c.id)) {
+                mergedCases.push(c);
+                seenIds.add(c.id);
+            }
+        }
+
+        const casesOnDay = mergedCases;
         if (casesOnDay.length === 0) {
             casesContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak spraw na ten dzień</p>';
         } else {
@@ -1021,7 +1038,8 @@ const trackerModule = (() => {
         const tasksContainer = document.getElementById('dayPlanTasks');
         if (!tasksContainer) return;
         
-        const tasks = getTasksForDate(dateStr);
+        // Zadania w tej sekcji: tylko wpisy NIE powiązane bezpośrednio ze sprawą
+        const tasks = getTasksForDate(dateStr).filter(t => !t.caseId);
         if (tasks.length === 0) {
             tasksContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak zadań na ten dzień</p>';
         } else {
@@ -1138,6 +1156,42 @@ const trackerModule = (() => {
         if (window.Toast) window.Toast.success('Usunięto przypomnienie');
     }
 
+    // Szybka lista zadań "Plan na dziś" w nagłówku
+    function renderTodayQuickPlan() {
+        const listEl = document.getElementById('todayPlanList');
+        if (!listEl) return;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const tasks = getTasksForDate(todayStr).filter(t => !t.caseId);
+
+        if (!tasks.length) {
+            listEl.innerHTML = '<p class="text-xs text-slate-400 italic px-2 py-1">Brak zadań na dziś</p>';
+            return;
+        }
+
+        listEl.innerHTML = tasks.map(task => `
+            <label class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer text-xs">
+                <input type="checkbox" ${task.done ? 'checked' : ''} onchange="trackerModule.toggleTaskDone(${task.id}); trackerModule.renderTodayQuickPlan();" class="w-4 h-4 text-green-600 rounded">
+                <span class="flex-1 ${task.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-100'} truncate">${task.text}</span>
+            </label>
+        `).join('');
+    }
+
+    function toggleTodayQuickPlan() {
+        const popover = document.getElementById('todayPlanPopover');
+        if (!popover) return;
+
+        const isHidden = popover.classList.contains('hidden');
+        if (isHidden) {
+            renderTodayQuickPlan();
+            popover.classList.remove('hidden');
+        } else {
+            popover.classList.add('hidden');
+        }
+
+        if (window.lucide) lucide.createIcons();
+    }
+
     async function initTracker() {
         await loadCases();
         loadDailyPlan();
@@ -1207,6 +1261,8 @@ const trackerModule = (() => {
         addTaskFromModal,
         addReminderFromModal,
         deleteReminder,
+        renderTodayQuickPlan,
+        toggleTodayQuickPlan,
     };
 })();
 
