@@ -321,12 +321,27 @@ window.APP_VIEWS = {
                </div>
 
                <div class="space-y-4">
-                   <button onclick="exportData()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-indigo-200 dark:shadow-none transition-transform active:scale-95 group">
-                       <i data-lucide="download-cloud" class="group-hover:animate-bounce"></i> Pobierz Kopię Zapasową (.json)
+                   <!-- Encryption Options -->
+                   <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                       <div class="flex items-center gap-3 mb-3">
+                           <input type="checkbox" id="encryptBackup" class="w-4 h-4 text-indigo-600 rounded" onchange="document.getElementById('backupPassword').disabled = !this.checked">
+                           <label for="encryptBackup" class="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2">
+                               <i data-lucide="shield-check" size="16" class="text-indigo-600 dark:text-indigo-400"></i>
+                               Zaszyfruj backup (AES-256)
+                           </label>
+                       </div>
+                       <input id="backupPassword" type="password" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Hasło do szyfrowania (min. 4 znaki)" disabled>
+                       <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+                           <i data-lucide="info" size="10" class="inline"></i> Backup będzie zaszyfrowany. Bez hasła nie odzyskasz danych!
+                       </p>
+                   </div>
+
+                   <button onclick="exportDataSecure()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-indigo-200 dark:shadow-none transition-transform active:scale-95 group">
+                       <i data-lucide="download-cloud" class="group-hover:animate-bounce"></i> Pobierz Kopię Zapasową
                    </button>
 
                    <div class="relative">
-                       <input type="file" id="importInputPage" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json" onchange="importData(event)">
+                       <input type="file" id="importInputPage" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json" onchange="importDataSecure(event)">
                        <button class="w-full py-4 bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 dark:text-slate-300 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors">
                            <i data-lucide="upload-cloud"></i> Przywróć z pliku
                        </button>

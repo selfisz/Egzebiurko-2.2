@@ -82,6 +82,11 @@ async function startApp() {
     if (typeof updatePinStatus === 'function') {
         updatePinStatus();
     }
+    
+    // Inicjalizuj przypomnienia o backupie (sprawdzanie o 17:00)
+    if (typeof initBackupReminder === 'function') {
+        initBackupReminder();
+    }
 }
 
 // --- KEYBOARD SHORTCUTS ---
