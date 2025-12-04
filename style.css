@@ -576,3 +576,13 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 .dark #tracker-stats .progress-bar {
   background-color: #334155;
 }
+
+/* Przycisk PDF */
+button[onclick*="exportToPDF"] {
+  transition: all 0.2s;
+}
+
+button[onclick*="exportToPDF"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
