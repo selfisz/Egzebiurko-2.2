@@ -11,6 +11,7 @@ const trackerModule = (() => {
     const PREDEFINED_TAGS = [];
     let kanbanSortables = [];
     let bulkMode = false;
+    let dailyPlan = []; // Plan dnia: tablica zadań { id, date, text, done, caseId (opcjonalnie) }
 
     async function getDB() {
         if (!state.db) await initDB();
@@ -48,6 +49,7 @@ const trackerModule = (() => {
         else deadlineText = `${daysRemaining} dni`;
 
         const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+        const planIcon = `<i data-lucide="calendar-plus" class="text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
 
         // Tagi
         const tagsHTML = Array.isArray(caseData.tags) && caseData.tags.length > 0
@@ -64,7 +66,7 @@ const trackerModule = (() => {
         return `
             <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
                 <input type="checkbox" class="case-checkbox hidden mr-3 w-5 h-5 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
-                <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
+                <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
                         <div class="text-xs text-slate-400 font-mono">${caseData.unp || ''}</div>
@@ -78,7 +80,10 @@ const trackerModule = (() => {
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
                     </div>
                     <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
-                    ${favoriteIcon}
+                    <div class="flex items-center gap-2">
+                        ${planIcon}
+                        ${favoriteIcon}
+                    </div>
                 </div>
             </div>
         `;
@@ -276,13 +281,22 @@ const trackerModule = (() => {
         // Jedno globalne nasłuchiwanie kliknięcia na teczkę
         if (!caseListClickBound) {
             listEl.addEventListener('click', (e) => {
+                // Jeśli kliknięto w checkbox, nie rób nic (obsługuje własny onclick)
+                if (e.target.classList.contains('case-checkbox')) return;
+                
                 const item = e.target.closest('.case-binder');
                 if (!item) return;
                 const idAttr = item.getAttribute('data-case-id');
                 if (!idAttr) return;
                 const id = parseInt(idAttr, 10);
                 if (Number.isNaN(id)) return;
-                openCase(id, false);
+                
+                // W trybie masowym: zaznacz zamiast otwierać
+                if (bulkMode) {
+                    toggleCaseSelection(id);
+                } else {
+                    openCase(id, false);
+                }
             });
             caseListClickBound = true;
         }
@@ -894,8 +908,61 @@ const trackerModule = (() => {
         }).join('');
     }
 
+    // === PLAN DNIA ===
+    function loadDailyPlan() {
+        const stored = localStorage.getItem('dailyPlan');
+        dailyPlan = stored ? JSON.parse(stored) : [];
+    }
+
+    function saveDailyPlan() {
+        localStorage.setItem('dailyPlan', JSON.stringify(dailyPlan));
+    }
+
+    function addTaskToPlan(text, date = null, caseId = null) {
+        const task = {
+            id: Date.now(),
+            date: date || new Date().toISOString().split('T')[0],
+            text,
+            done: false,
+            caseId,
+        };
+        dailyPlan.push(task);
+        saveDailyPlan();
+        return task;
+    }
+
+    function toggleTaskDone(taskId) {
+        const task = dailyPlan.find(t => t.id === taskId);
+        if (task) {
+            task.done = !task.done;
+            saveDailyPlan();
+        }
+    }
+
+    function deleteTask(taskId) {
+        dailyPlan = dailyPlan.filter(t => t.id !== taskId);
+        saveDailyPlan();
+    }
+
+    function getTasksForDate(dateStr) {
+        return dailyPlan.filter(t => t.date === dateStr);
+    }
+
+    function addCaseToDailyPlan(caseId) {
+        const caseData = cases.find(c => c.id === caseId);
+        if (!caseData) return;
+        
+        const text = `Sprawa: ${caseData.no} - ${caseData.debtor || 'Brak danych'}`;
+        addTaskToPlan(text, new Date().toISOString().split('T')[0], caseId);
+        
+        if (window.Toast) {
+            window.Toast.success('Dodano sprawę do planu dnia');
+        }
+    }
+
     async function initTracker() {
         await loadCases();
+        loadDailyPlan();
         
         const sortEl = document.getElementById('trSort');
         const searchEl = document.getElementById('trackerSearch');
@@ -949,6 +1016,11 @@ const trackerModule = (() => {
         saveReminder,
         filterByDate,
         focusDate,
+        addCaseToDailyPlan,
+        addTaskToPlan,
+        toggleTaskDone,
+        deleteTask,
+        getTasksForDate,
     };
 })();
 
