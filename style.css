@@ -603,3 +603,37 @@ button[onclick*="exportToPDF"]:hover {
   justify-content: center;
   font-weight: bold;
 }
+
+/* ===== KANBAN DRAG & DROP ===== */
+.kanban-column {
+  min-height: 300px;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.kanban-column-header {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.kanban-item {
+  cursor: grab;
+  transition: transform 0.1s;
+}
+
+.kanban-item:active {
+  cursor: grabbing;
+}
+
+.kanban-item.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+}
+
+.dark .kanban-column {
+  background: #1e293b;
+  border-color: #334155;
+}
