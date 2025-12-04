@@ -608,6 +608,7 @@ window.APP_VIEWS = {
                     <button onclick="trackerModule.bulkUpdateStatus('in-progress')" class="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">W toku</button>
                     <button onclick="trackerModule.bulkUpdateStatus('finished')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700">Zakończona</button>
                     <button onclick="trackerModule.bulkToggleUrgent()" class="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700">Pilne</button>
+                    <button onclick="trackerModule.exitBulkMode()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-200 rounded-lg hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200">Anuluj</button>
                 </div>
             </div>
             <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">

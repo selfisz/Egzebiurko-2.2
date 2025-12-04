@@ -233,6 +233,61 @@
         </div>
     </div>
 
+    <!-- Modal Planu Dnia -->
+    <div id="dayPlanModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-2xl shadow-2xl animate-fade max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                <h3 class="font-bold dark:text-white flex items-center gap-2">
+                    <i data-lucide="calendar-days"></i>
+                    <span id="dayPlanDateDisplay">Plan Dnia</span>
+                </h3>
+                <button onclick="trackerModule.closeDayPlanModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            
+            <input type="hidden" id="dayPlanDateInput">
+            
+            <!-- Sprawy na ten dzień -->
+            <div class="mb-6">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i data-lucide="folder" size="14"></i> Sprawy
+                </h4>
+                <div id="dayPlanCases" class="space-y-2"></div>
+            </div>
+            
+            <!-- Zadania do zrobienia -->
+            <div class="mb-6">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i data-lucide="check-square" size="14"></i> Zadania
+                </h4>
+                <div id="dayPlanTasks" class="space-y-2 mb-3"></div>
+                
+                <!-- Dodaj nowe zadanie -->
+                <div class="flex gap-2">
+                    <input type="text" id="newTaskInput" placeholder="Dodaj nowe zadanie..." class="flex-1 border dark:border-slate-600 p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                    <button onclick="trackerModule.addTaskFromModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center gap-1">
+                        <i data-lucide="plus" size="16"></i> Dodaj
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Przypomnienia -->
+            <div>
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                    <i data-lucide="bell" size="14"></i> Przypomnienia
+                </h4>
+                <div id="dayPlanReminders" class="space-y-2 mb-3"></div>
+                
+                <!-- Dodaj przypomnienie -->
+                <div class="flex gap-2">
+                    <input type="text" id="newReminderInput" placeholder="Dodaj przypomnienie..." class="flex-1 border dark:border-slate-600 p-2 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none">
+                    <button onclick="trackerModule.addReminderFromModal()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg font-bold hover:bg-yellow-700 transition-colors flex items-center gap-1">
+                        <i data-lucide="plus" size="16"></i> Dodaj
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="magicFillModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-2xl h-[500px] flex flex-col">
              <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-2">

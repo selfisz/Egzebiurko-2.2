@@ -500,24 +500,34 @@ const trackerModule = (() => {
     }
 
     function toggleBulkMenu() {
-        bulkMode = !bulkMode;
+        const menu = document.getElementById('bulk-select-menu');
+        
+        if (bulkMode) {
+            // Jeśli tryb masowy jest włączony, tylko przełącz menu
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        } else {
+            // Włącz tryb masowy
+            bulkMode = true;
+            const checkboxes = document.querySelectorAll('.case-checkbox');
+            checkboxes.forEach(cb => cb.classList.remove('hidden'));
+            if (menu) menu.classList.remove('hidden');
+        }
+    }
+    
+    function exitBulkMode() {
+        bulkMode = false;
         const menu = document.getElementById('bulk-select-menu');
         const checkboxes = document.querySelectorAll('.case-checkbox');
         
-        if (bulkMode) {
-            // Włącz tryb masowy: pokaż checkboxy i menu
-            checkboxes.forEach(cb => cb.classList.remove('hidden'));
-            if (menu) menu.classList.remove('hidden');
-        } else {
-            // Wyłącz tryb masowy: ukryj checkboxy i menu, wyczyść zaznaczenia
-            checkboxes.forEach(cb => {
-                cb.classList.add('hidden');
-                cb.checked = false;
-            });
-            if (menu) menu.classList.add('hidden');
-            selectedCases.clear();
-            updateBulkActionsBar();
-        }
+        checkboxes.forEach(cb => {
+            cb.classList.add('hidden');
+            cb.checked = false;
+        });
+        if (menu) menu.classList.add('hidden');
+        selectedCases.clear();
+        updateBulkActionsBar();
     }
 
     function updateBulkActionsBar() {
@@ -778,10 +788,9 @@ const trackerModule = (() => {
             dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors relative text-center text-sm';
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            // Kliknięcie w dzień: filtruje sprawy po dacie ORAZ otwiera modal przypomnienia
+            // Kliknięcie w dzień: otwiera modal planu dnia
             dayEl.onclick = () => {
-                filterByDate(dateStr);
-                openReminderModal(dateStr);
+                openDayPlanModal(dateStr);
             };
 
             if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
@@ -800,9 +809,17 @@ const trackerModule = (() => {
                 dayEl.appendChild(dot);
             }
 
+            // Zielona kropka dla zadań
+            const tasksOnDay = getTasksForDate(dateStr);
+            if (tasksOnDay.length > 0) {
+                const taskDot = document.createElement('div');
+                taskDot.className = 'absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-green-500';
+                dayEl.appendChild(taskDot);
+            }
+
             if (reminders[dateStr]) {
                 const reminderDot = document.createElement('div');
-                reminderDot.className = 'absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-green-500';
+                reminderDot.className = 'absolute top-0 left-0 w-1.5 h-1.5 rounded-full bg-yellow-500';
                 dayEl.appendChild(reminderDot);
             }
 
@@ -960,6 +977,167 @@ const trackerModule = (() => {
         }
     }
 
+    function openDayPlanModal(dateStr) {
+        const modal = document.getElementById('dayPlanModal');
+        const dateDisplay = document.getElementById('dayPlanDateDisplay');
+        const dateInput = document.getElementById('dayPlanDateInput');
+        const casesContainer = document.getElementById('dayPlanCases');
+        const tasksContainer = document.getElementById('dayPlanTasks');
+        const remindersContainer = document.getElementById('dayPlanReminders');
+        
+        if (!modal || !dateDisplay || !dateInput || !casesContainer || !tasksContainer || !remindersContainer) return;
+        
+        dateInput.value = dateStr;
+        const d = new Date(dateStr);
+        dateDisplay.textContent = `Plan na ${d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+        
+        // Sprawy na ten dzień
+        const casesOnDay = cases.filter(c => c.date === dateStr && !c.archived);
+        if (casesOnDay.length === 0) {
+            casesContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak spraw na ten dzień</p>';
+        } else {
+            casesContainer.innerHTML = casesOnDay.map(c => `
+                <div class="p-3 border dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="font-bold text-sm dark:text-white">${c.no}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">${c.debtor || 'Brak danych'}</div>
+                    </div>
+                    <button onclick="trackerModule.openCase(${c.id}, false); trackerModule.closeDayPlanModal();" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold">Otwórz</button>
+                </div>
+            `).join('');
+        }
+        
+        // Zadania na ten dzień
+        renderDayPlanTasks(dateStr);
+        
+        // Przypomnienia na ten dzień
+        renderDayPlanReminders(dateStr);
+        
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function renderDayPlanTasks(dateStr) {
+        const tasksContainer = document.getElementById('dayPlanTasks');
+        if (!tasksContainer) return;
+        
+        const tasks = getTasksForDate(dateStr);
+        if (tasks.length === 0) {
+            tasksContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak zadań na ten dzień</p>';
+        } else {
+            tasksContainer.innerHTML = tasks.map(task => `
+                <div class="p-3 border dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 flex items-center gap-3">
+                    <input type="checkbox" ${task.done ? 'checked' : ''} onchange="trackerModule.toggleTaskDone(${task.id}); trackerModule.renderDayPlanTasks('${dateStr}')" class="w-4 h-4 text-green-600 rounded">
+                    <div class="flex-1 ${task.done ? 'line-through text-slate-400' : 'dark:text-white'}">
+                        <div class="text-sm">${task.text}</div>
+                    </div>
+                    <button onclick="trackerModule.deleteTask(${task.id}); trackerModule.renderDayPlanTasks('${dateStr}')" class="text-red-500 hover:text-red-700">
+                        <i data-lucide="trash-2" size="16"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeDayPlanModal() {
+        const modal = document.getElementById('dayPlanModal');
+        if (modal) modal.classList.add('hidden');
+        renderCalendar(); // Odśwież kalendarz, żeby pokazać kropki zadań
+    }
+
+    function addTaskFromModal() {
+        const input = document.getElementById('newTaskInput');
+        const dateInput = document.getElementById('dayPlanDateInput');
+        if (!input || !dateInput) return;
+        
+        const text = input.value.trim();
+        const dateStr = dateInput.value;
+        
+        if (!text) {
+            if (window.Toast) window.Toast.error('Wpisz treść zadania');
+            return;
+        }
+        
+        addTaskToPlan(text, dateStr);
+        input.value = '';
+        renderDayPlanTasks(dateStr);
+        
+        if (window.Toast) window.Toast.success('Dodano zadanie');
+    }
+
+    function renderDayPlanReminders(dateStr) {
+        const remindersContainer = document.getElementById('dayPlanReminders');
+        if (!remindersContainer) return;
+        
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+        
+        const reminderText = reminders[dateStr];
+        if (!reminderText) {
+            remindersContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak przypomnień na ten dzień</p>';
+        } else {
+            remindersContainer.innerHTML = `
+                <div class="p-3 border dark:border-slate-600 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-between">
+                    <div class="flex-1 text-sm dark:text-white">${reminderText}</div>
+                    <button onclick="trackerModule.deleteReminder('${dateStr}'); trackerModule.renderDayPlanReminders('${dateStr}')" class="text-red-500 hover:text-red-700">
+                        <i data-lucide="trash-2" size="16"></i>
+                    </button>
+                </div>
+            `;
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function addReminderFromModal() {
+        const input = document.getElementById('newReminderInput');
+        const dateInput = document.getElementById('dayPlanDateInput');
+        if (!input || !dateInput) return;
+        
+        const text = input.value.trim();
+        const dateStr = dateInput.value;
+        
+        if (!text) {
+            if (window.Toast) window.Toast.error('Wpisz treść przypomnienia');
+            return;
+        }
+        
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+        
+        reminders[dateStr] = text;
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+        
+        input.value = '';
+        renderDayPlanReminders(dateStr);
+        renderCalendar();
+        
+        if (window.Toast) window.Toast.success('Dodano przypomnienie');
+    }
+
+    function deleteReminder(dateStr) {
+        let reminders = {};
+        try {
+            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+        } catch (e) {
+            reminders = {};
+        }
+        
+        delete reminders[dateStr];
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+        renderCalendar();
+        
+        if (window.Toast) window.Toast.success('Usunięto przypomnienie');
+    }
+
     async function initTracker() {
         await loadCases();
         loadDailyPlan();
@@ -1009,6 +1187,7 @@ const trackerModule = (() => {
         toggleCaseSelection,
         selectAllCases,
         toggleBulkMenu,
+        exitBulkMode,
         bulkUpdateStatus,
         bulkToggleUrgent,
         openReminderModal,
@@ -1021,6 +1200,13 @@ const trackerModule = (() => {
         toggleTaskDone,
         deleteTask,
         getTasksForDate,
+        openDayPlanModal,
+        closeDayPlanModal,
+        renderDayPlanTasks,
+        renderDayPlanReminders,
+        addTaskFromModal,
+        addReminderFromModal,
+        deleteReminder,
     };
 })();
 
