@@ -102,6 +102,7 @@ const trackerModule = (() => {
 
     function openCase(id) {
         currentCaseId = id;
+        window.currentCaseId = id; // Make available globally for attachments
         const caseData = cases.find(c => c.id === id);
         if (!caseData) return;
 
@@ -116,6 +117,11 @@ const trackerModule = (() => {
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
         document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
+        
+        // Load attachments
+        if (typeof renderAttachments === 'function') {
+            renderAttachments(id);
+        }
     }
 
     async function toggleFavorite(caseId) {

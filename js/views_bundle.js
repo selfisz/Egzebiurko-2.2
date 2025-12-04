@@ -321,6 +321,11 @@ window.APP_VIEWS = {
                </div>
 
                <div class="space-y-4">
+                   <!-- Storage Usage -->
+                   <div id="storageUsage" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                       <!-- Storage indicator will be rendered here -->
+                   </div>
+                   
                    <!-- Encryption Options -->
                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                        <div class="flex items-center gap-3 mb-3">
@@ -410,6 +415,31 @@ window.APP_VIEWS = {
                    <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500 dark:text-slate-400">
                        <span id="pinStatus">PIN nie jest ustawiony.</span>
                        <button onclick="lockScreen()" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline">Zablokuj ekran</button>
+                   </div>
+              </div>
+
+              <div class="glass-panel p-8 rounded-2xl shadow-lg flex flex-col gap-4 bg-white/50 dark:bg-slate-800/50">
+                   <div class="flex items-center gap-4 border-b border-slate-200/50 dark:border-slate-700/50 pb-4">
+                       <div class="p-3 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl">
+                           <i data-lucide="file-text" size="24"></i>
+                       </div>
+                       <div>
+                           <h3 class="font-bold text-lg text-slate-800 dark:text-white">Szablony Notatek</h3>
+                           <p class="text-xs text-slate-500">Szybkie wstawianie powtarzalnych notatek.</p>
+                       </div>
+                   </div>
+
+                   <div class="space-y-3">
+                       <div class="flex gap-2">
+                           <input id="newNoteTemplate" type="text" class="flex-1 p-2.5 border rounded-lg text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Np. 'Wysłano wezwanie'">
+                           <button onclick="addNoteTemplate()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors">
+                               <i data-lucide="plus" size="16"></i>
+                           </button>
+                       </div>
+                       
+                       <div id="noteTemplatesList" class="space-y-2 max-h-60 overflow-y-auto custom-scroll">
+                           <!-- Templates will be rendered here -->
+                       </div>
                    </div>
               </div>
 
@@ -605,8 +635,32 @@ window.APP_VIEWS = {
                         <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Notatka</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Notatka</label>
+                            <button onclick="showNoteTemplateMenu(event)" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center gap-1">
+                                <i data-lucide="file-plus" size="12"></i> Wstaw szablon
+                            </button>
+                        </div>
                         <textarea id="trNote" rows="4" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white resize-y"></textarea>
+                    </div>
+                    
+                    <!-- Attachments Section -->
+                    <div class="border-t pt-4 mt-4 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Załączniki</label>
+                            <div class="relative">
+                                <input type="file" id="attachmentInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*,.pdf" onchange="handleAttachmentUpload(event, window.currentCaseId)">
+                                <button class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center gap-1 pointer-events-none">
+                                    <i data-lucide="paperclip" size="12"></i> Dodaj plik
+                                </button>
+                            </div>
+                        </div>
+                        <div id="attachmentsList" class="space-y-2 mb-3">
+                            <!-- Attachments will be rendered here -->
+                        </div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                            <i data-lucide="info" size="10" class="inline"></i> Max 2MB/plik. Obrazy będą skompresowane.
+                        </div>
                     </div>
                  </div>
             </div>

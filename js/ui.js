@@ -256,6 +256,14 @@ function goToModule(moduleName, options = {}) {
         loadView(moduleName);
     }
     
+    // Load note templates and storage usage when opening settings
+    if (moduleName === 'settings') {
+        setTimeout(() => {
+            if (typeof loadNoteTemplates === 'function') loadNoteTemplates();
+            if (typeof renderStorageUsage === 'function') renderStorageUsage();
+        }, 100);
+    }
+    
     // Handle any additional options (e.g., caseId for tracker)
     if (options.caseId && window.trackerModule && window.trackerModule.openCase) {
         setTimeout(() => window.trackerModule.openCase(options.caseId), 100);
@@ -487,4 +495,112 @@ async function runGlobalSearch(query) {
         console.error('Search error:', error);
         resultsContainer.innerHTML = '<div class="p-8 text-center text-red-400 text-sm">Błąd wyszukiwania</div>';
     }
+}
+
+// --- NOTE TEMPLATES MANAGEMENT ---
+function loadNoteTemplates() {
+    const templates = JSON.parse(localStorage.getItem('lex_note_templates') || '[]');
+    const container = document.getElementById('noteTemplatesList');
+    if (!container) return;
+    
+    if (templates.length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">Brak szablonów. Dodaj pierwszy!</div>';
+        return;
+    }
+    
+    container.innerHTML = templates.map((template, index) => `
+        <div class="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div class="flex-1 text-sm text-slate-700 dark:text-slate-300 truncate">${template}</div>
+            <button onclick="deleteNoteTemplate(${index})" class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Usuń">
+                <i data-lucide="trash-2" size="14"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function addNoteTemplate() {
+    const input = document.getElementById('newNoteTemplate');
+    if (!input) return;
+    
+    const text = input.value.trim();
+    if (!text) {
+        alert('Proszę wpisać treść szablonu.');
+        return;
+    }
+    
+    const templates = JSON.parse(localStorage.getItem('lex_note_templates') || '[]');
+    templates.push(text);
+    localStorage.setItem('lex_note_templates', JSON.stringify(templates));
+    
+    input.value = '';
+    loadNoteTemplates();
+}
+
+function deleteNoteTemplate(index) {
+    if (!confirm('Usunąć ten szablon?')) return;
+    
+    const templates = JSON.parse(localStorage.getItem('lex_note_templates') || '[]');
+    templates.splice(index, 1);
+    localStorage.setItem('lex_note_templates', JSON.stringify(templates));
+    
+    loadNoteTemplates();
+}
+
+function showNoteTemplateMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const templates = JSON.parse(localStorage.getItem('lex_note_templates') || '[]');
+    
+    if (templates.length === 0) {
+        alert('Brak szablonów. Dodaj je w Ustawieniach.');
+        return;
+    }
+    
+    // Remove existing menu if any
+    const existingMenu = document.getElementById('noteTemplateMenu');
+    if (existingMenu) existingMenu.remove();
+    
+    // Create dropdown menu
+    const menu = document.createElement('div');
+    menu.id = 'noteTemplateMenu';
+    menu.className = 'fixed z-[100] glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scroll';
+    menu.style.left = event.pageX + 'px';
+    menu.style.top = event.pageY + 'px';
+    
+    menu.innerHTML = templates.map((template, index) => `
+        <button onclick="insertNoteTemplate(${index})" class="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors whitespace-nowrap">
+            ${template}
+        </button>
+    `).join('');
+    
+    document.body.appendChild(menu);
+    
+    // Close menu on outside click
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu() {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+        });
+    }, 100);
+}
+
+function insertNoteTemplate(index) {
+    const templates = JSON.parse(localStorage.getItem('lex_note_templates') || '[]');
+    const template = templates[index];
+    if (!template) return;
+    
+    const noteField = document.getElementById('trNote');
+    if (!noteField) return;
+    
+    const currentValue = noteField.value;
+    const newValue = currentValue ? currentValue + '\n\n' + template : template;
+    noteField.value = newValue;
+    noteField.focus();
+    
+    // Remove menu
+    const menu = document.getElementById('noteTemplateMenu');
+    if (menu) menu.remove();
 }

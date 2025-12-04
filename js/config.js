@@ -1,7 +1,7 @@
 // CONFIGURATION
 const CONFIG = {
     DB_NAME: 'EgzeBiurkoDB',
-    DB_VERSION: 5,
+    DB_VERSION: 6,
     THEME: {
         STORAGE_KEY: 'lex_theme',
         DARK_MODE_KEY: 'lex_dark_mode'

@@ -15,6 +15,7 @@ async function initDB() {
             if (!db.objectStoreNames.contains('pdfs')) db.createObjectStore('pdfs', { keyPath: 'name' });
             if (!db.objectStoreNames.contains('reminders')) db.createObjectStore('reminders', { keyPath: 'id', autoIncrement: true });
             if (!db.objectStoreNames.contains('terrain_cases')) db.createObjectStore('terrain_cases', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('attachments')) db.createObjectStore('attachments', { keyPath: 'id', autoIncrement: true });
 
             // Migration from 'cases' to 'tracker'
             if (oldVersion < 5) {
