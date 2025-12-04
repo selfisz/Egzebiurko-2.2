@@ -554,6 +554,76 @@ async function runGlobalSearch(query) {
             });
         }
         
+        // Search in notes
+        if (db.objectStoreNames.contains('notes')) {
+            const notes = await db.getAll('notes');
+            notes.forEach(n => {
+                if ((n.title && n.title.toLowerCase().includes(q)) || 
+                    (n.content && n.content.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Notatka',
+                        icon: 'sticky-note',
+                        title: n.title || 'Bez tytułu',
+                        subtitle: (n.content || '').substring(0, 50) + '...',
+                        action: () => { toggleSearch(); goToModule('notes'); }
+                    });
+                }
+            });
+        }
+        
+        // Search in links (localStorage)
+        try {
+            const links = JSON.parse(localStorage.getItem('lex_links') || '[]');
+            links.forEach(link => {
+                if ((link.name && link.name.toLowerCase().includes(q)) || 
+                    (link.url && link.url.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Link',
+                        icon: 'link',
+                        title: link.name,
+                        subtitle: link.url,
+                        action: () => { toggleSearch(); goToModule('links'); }
+                    });
+                }
+            });
+        } catch (e) {}
+        
+        // Search in terrain cases
+        if (db.objectStoreNames.contains('terrain_cases')) {
+            const terrainCases = await db.getAll('terrain_cases');
+            terrainCases.forEach(tc => {
+                if ((tc.address && tc.address.toLowerCase().includes(q)) || 
+                    (tc.debtor && tc.debtor.toLowerCase().includes(q)) ||
+                    (tc.notes && tc.notes.toLowerCase().includes(q))) {
+                    results.push({
+                        type: 'Teren',
+                        icon: 'map-pin',
+                        title: tc.debtor || tc.address || 'Sprawa terenowa',
+                        subtitle: tc.address || '',
+                        action: () => { toggleSearch(); goToModule('terrain'); }
+                    });
+                }
+            });
+        }
+        
+        // Search in reminders (localStorage)
+        try {
+            const reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
+            Object.entries(reminders).forEach(([date, texts]) => {
+                texts.forEach(text => {
+                    if (text.toLowerCase().includes(q)) {
+                        results.push({
+                            type: 'Przypomnienie',
+                            icon: 'bell',
+                            title: text.substring(0, 40) + (text.length > 40 ? '...' : ''),
+                            subtitle: `Data: ${date}`,
+                            action: () => { toggleSearch(); goToModule('tracker'); }
+                        });
+                    }
+                });
+            });
+        } catch (e) {}
+        
         // Render results
         if (results.length === 0) {
             resultsContainer.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm">Brak wyników dla "' + query + '"</div>';
