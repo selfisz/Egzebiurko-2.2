@@ -578,6 +578,9 @@ window.APP_VIEWS = {
             <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
                 <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
                 <div class="flex items-center gap-2">
+                    <button onclick="trackerModule.selectAllCases()" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
+                        <i data-lucide="check-square" size="14"></i> Zaznacz
+                    </button>
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
                         <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors" oninput="trackerModule.renderFullTracker(this.value)">
@@ -586,6 +589,18 @@ window.APP_VIEWS = {
                     <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
                     <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
                     <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
+                </div>
+            </div>
+            <!-- Pasek operacji masowych -->
+            <div id="bulk-actions-bar" class="hidden flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800">
+                <div class="flex items-center gap-2 text-sm">
+                    <i data-lucide="check-circle" size="16" class="text-indigo-600"></i>
+                    <span class="font-bold text-indigo-900 dark:text-indigo-100">Zaznaczono: <span id="bulk-selected-count">0</span> spraw</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="trackerModule.bulkUpdateStatus('in-progress')" class="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">W toku</button>
+                    <button onclick="trackerModule.bulkUpdateStatus('finished')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700">Zakończona</button>
+                    <button onclick="trackerModule.bulkToggleUrgent()" class="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700">Pilność</button>
                 </div>
             </div>
             <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">

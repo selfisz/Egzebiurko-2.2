@@ -61,6 +61,7 @@ const trackerModule = (() => {
 
         return `
             <div class="${folderClasses} flex items-center p-3 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}">
+                <input type="checkbox" class="case-checkbox mr-3 w-4 h-4 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0" onclick="trackerModule.openCase(${caseData.id})">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -300,6 +301,75 @@ const trackerModule = (() => {
         }
     }
 
+    // Operacje masowe
+    let selectedCases = new Set();
+
+    function toggleCaseSelection(caseId) {
+        if (selectedCases.has(caseId)) {
+            selectedCases.delete(caseId);
+        } else {
+            selectedCases.add(caseId);
+        }
+        updateBulkActionsBar();
+    }
+
+    function selectAllCases() {
+        const checkboxes = document.querySelectorAll('.case-checkbox');
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => {
+            const caseId = parseInt(cb.getAttribute('data-case-id'));
+            cb.checked = !allChecked;
+            if (!allChecked) {
+                selectedCases.add(caseId);
+            } else {
+                selectedCases.delete(caseId);
+            }
+        });
+        updateBulkActionsBar();
+    }
+
+    function updateBulkActionsBar() {
+        const bar = document.getElementById('bulk-actions-bar');
+        const count = document.getElementById('bulk-selected-count');
+        
+        if (bar && count) {
+            if (selectedCases.size > 0) {
+                bar.classList.remove('hidden');
+                count.textContent = selectedCases.size;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+    }
+
+    async function bulkUpdateStatus(newStatus) {
+        for (const caseId of selectedCases) {
+            const caseData = cases.find(c => c.id === caseId);
+            if (caseData) {
+                caseData.status = newStatus;
+                caseData.archived = newStatus === 'finished';
+                await saveCaseToDB(caseData);
+            }
+        }
+        selectedCases.clear();
+        await loadCases();
+        if (window.Toast) Toast.success(`Zaktualizowano status ${selectedCases.size} spraw`);
+    }
+
+    async function bulkToggleUrgent() {
+        for (const caseId of selectedCases) {
+            const caseData = cases.find(c => c.id === caseId);
+            if (caseData) {
+                caseData.urgent = !caseData.urgent;
+                await saveCaseToDB(caseData);
+            }
+        }
+        selectedCases.clear();
+        await loadCases();
+        if (window.Toast) Toast.success(`Przełączono pilność ${selectedCases.size} spraw`);
+    }
+
     async function getNextCaseNumber() {
         const allCases = await getAllCases();
         const year = new Date().getFullYear().toString().slice(-2);
@@ -382,6 +452,8 @@ const trackerModule = (() => {
     
     async function addNewCase() {
         currentCaseId = null;
+        isEditMode = true; // Nowa sprawa zawsze w trybie edycji
+        
         const nextCaseNumber = await getNextCaseNumber();
         const caseNoInput = document.getElementById('trNo');
         caseNoInput.value = nextCaseNumber;
@@ -408,8 +480,12 @@ const trackerModule = (() => {
         const priorityEl = document.getElementById('trPriority');
         if (priorityEl) priorityEl.value = 'medium';
         document.getElementById('trNote').value = '';
+        document.getElementById('tracker-case-label').textContent = 'Nowa sprawa';
         currentCaseTags = [];
         renderTagsUI();
+        
+        // Ustaw tryb edycji
+        setViewMode(true);
         document.getElementById('tracker-case-label').textContent = 'Nowa Sprawa';
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
@@ -682,6 +758,10 @@ const trackerModule = (() => {
         renderFullTracker,
         toggleFavorite,
         toggleEditMode,
+        toggleCaseSelection,
+        selectAllCases,
+        bulkUpdateStatus,
+        bulkToggleUrgent,
         openReminderModal,
         closeReminderModal,
         saveReminder,
