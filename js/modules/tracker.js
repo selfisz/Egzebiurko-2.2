@@ -95,7 +95,16 @@ const trackerModule = (() => {
         
         listEl.innerHTML = filteredCases.length 
             ? filteredCases.map(createCaseBinder).join('') 
-            : '<div class="text-center text-slate-400 py-10">Brak spraw.</div>';
+            : `<div class="flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 empty-state-icon">
+                    <i data-lucide="folder-open" size="40" class="text-slate-300 dark:text-slate-600"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-600 dark:text-slate-400 mb-2">Brak spraw</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Dodaj pierwszą sprawę, aby rozpocząć</p>
+                <button onclick="trackerModule.addNewCase()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">
+                    <i data-lucide="plus" size="16" class="inline mr-1"></i> Dodaj sprawę
+                </button>
+            </div>`;
         countEl.textContent = `${filteredCases.length} spraw`;
         if (window.lucide) lucide.createIcons();
     }
@@ -176,7 +185,8 @@ const trackerModule = (() => {
         };
 
         if (!caseData.no || !caseData.date) {
-            alert('Numer sprawy i data są wymagane.');
+            if (window.Toast) Toast.warning('Numer sprawy i data są wymagane.');
+            else alert('Numer sprawy i data są wymagane.');
             return;
         }
 
@@ -194,6 +204,7 @@ const trackerModule = (() => {
         closeCase();
         await loadCases();
 
+        if (window.Toast) Toast.success('Sprawa została zapisana');
         if (typeof checkNotifications === 'function') checkNotifications();
         if (typeof renderDashboardWidgets === 'function') renderDashboardWidgets();
     }
@@ -205,6 +216,7 @@ const trackerModule = (() => {
         await deleteCaseFromDB(currentCaseId);
         closeCase();
         await loadCases();
+        if (window.Toast) Toast.info('Sprawa została usunięta');
     }
     
     async function addNewCase() {

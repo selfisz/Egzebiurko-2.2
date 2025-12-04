@@ -5,6 +5,81 @@ function toggleDarkMode() {
     setTheme(theme);
 }
 
+// --- DASHBOARD STATS ---
+async function renderDashboardStats() {
+    const container = document.getElementById('dashboard-stats');
+    if (!container) return;
+    
+    try {
+        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        const cases = await db.getAll('tracker');
+        const cars = db.objectStoreNames.contains('garage') ? await db.getAll('garage') : [];
+        const notes = db.objectStoreNames.contains('notes') ? await db.getAll('notes') : [];
+        
+        // Calculate stats
+        const activeCases = cases.filter(c => !c.archived);
+        const urgentCases = activeCases.filter(c => c.urgent);
+        const favoriteCases = activeCases.filter(c => c.isFavorite);
+        
+        // Get upcoming deadlines (next 7 days)
+        const now = new Date();
+        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const upcomingDeadlines = activeCases.filter(c => {
+            if (!c.date) return false;
+            const caseDate = new Date(c.date);
+            return caseDate >= now && caseDate <= weekFromNow;
+        });
+        
+        const stats = [
+            {
+                label: 'Aktywne sprawy',
+                value: activeCases.length,
+                icon: 'briefcase',
+                color: 'indigo',
+                onClick: "goToModule('tracker')"
+            },
+            {
+                label: 'Pilne',
+                value: urgentCases.length,
+                icon: 'alert-triangle',
+                color: 'red',
+                onClick: "goToModule('tracker')"
+            },
+            {
+                label: 'Terminy (7 dni)',
+                value: upcomingDeadlines.length,
+                icon: 'calendar',
+                color: 'amber',
+                onClick: "goToModule('tracker')"
+            },
+            {
+                label: 'Pojazdy',
+                value: cars.length,
+                icon: 'car',
+                color: 'blue',
+                onClick: "goToModule('cars')"
+            }
+        ];
+        
+        container.innerHTML = stats.map(stat => `
+            <div onclick="${stat.onClick}" class="stat-card glass-panel p-4 rounded-2xl cursor-pointer hover:shadow-lg transition-all hover:-translate-y-0.5 text-${stat.color}-600 dark:text-${stat.color}-400">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-500/20 flex items-center justify-center">
+                        <i data-lucide="${stat.icon}" size="20"></i>
+                    </div>
+                    <span class="text-2xl font-bold">${stat.value}</span>
+                </div>
+                <div class="text-xs font-medium text-slate-600 dark:text-slate-400">${stat.label}</div>
+            </div>
+        `).join('');
+        
+        if (window.lucide) lucide.createIcons();
+    } catch (error) {
+        console.error('Dashboard stats error:', error);
+        container.innerHTML = '<div class="col-span-4 text-center text-slate-400 text-sm py-4">Błąd ładowania statystyk</div>';
+    }
+}
+
 function setTheme(theme) {
     // This function can be expanded to handle multiple themes
     // For now, it's just a placeholder.
@@ -261,6 +336,13 @@ function goToModule(moduleName, options = {}) {
         setTimeout(() => {
             if (typeof loadNoteTemplates === 'function') loadNoteTemplates();
             if (typeof renderStorageUsage === 'function') renderStorageUsage();
+        }, 100);
+    }
+    
+    // Load dashboard stats when opening dashboard
+    if (moduleName === 'dashboard') {
+        setTimeout(() => {
+            if (typeof renderDashboardStats === 'function') renderDashboardStats();
         }, 100);
     }
     

@@ -95,12 +95,21 @@ window.APP_VIEWS = {
 </div>`,
     'dashboard': `<div id="view-dashboard" class="view-active h-full overflow-y-auto custom-scroll p-8">
     <div class="max-w-7xl mx-auto mt-4">
-        <div class="mb-10 text-center relative">
+        <div class="mb-8 text-center relative">
             <h2 class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Witaj w EgzeBiurko 2.0</h2>
             <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-xl mx-auto">Twoje centrum dowodzenia. Wybierz moduł, aby rozpocząć pracę.</p>
             <button id="edit-dashboard-btn" onclick="toggleDashboardEditMode()" class="absolute top-0 right-0 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
                 <i data-lucide="move" class="inline-block mr-2"></i> Edytuj układ
             </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div id="dashboard-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <!-- Stats will be rendered here by JS -->
+            <div class="skeleton h-24 rounded-2xl"></div>
+            <div class="skeleton h-24 rounded-2xl"></div>
+            <div class="skeleton h-24 rounded-2xl"></div>
+            <div class="skeleton h-24 rounded-2xl"></div>
         </div>
 
         <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">

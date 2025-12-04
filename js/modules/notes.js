@@ -6,7 +6,16 @@ async function loadNotes() {
     const notes = await state.db.getAll('notes');
     notes.sort((a,b) => new Date(b.date) - new Date(a.date)); // Newest first
 
-    if(notes.length === 0) { l.innerHTML = '<div class="text-center text-slate-400 mt-4 text-xs">Brak notatek.</div>'; return; }
+    if(notes.length === 0) { 
+        l.innerHTML = `<div class="flex flex-col items-center justify-center py-8 text-center">
+            <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 empty-state-icon">
+                <i data-lucide="sticky-note" size="28" class="text-slate-300 dark:text-slate-600"></i>
+            </div>
+            <p class="text-sm text-slate-400 dark:text-slate-500">Brak notatek</p>
+        </div>`; 
+        if (window.lucide) lucide.createIcons();
+        return; 
+    }
 
     notes.forEach(n => {
         const div = document.createElement('div');
