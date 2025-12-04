@@ -480,3 +480,78 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 .dark .case-binder:hover {
   border-left-color: #818cf8;
 }
+
+/* ===== KARTY INFORMACYJNE PODGLĄDU SPRAWY ===== */
+.case-preview-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.case-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.case-preview-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.case-preview-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.case-preview-content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.case-preview-field {
+  margin-bottom: 0.75rem;
+}
+
+.case-preview-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.case-preview-value {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Dark mode styles */
+.dark .case-preview-card {
+  background: #1e293b;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+}
+
+.dark .case-preview-title,
+.dark .case-preview-value {
+  color: #f8fafc;
+}
+
+.dark .case-preview-header {
+  border-bottom-color: #334155;
+}
+
+.dark .case-preview-label {
+  color: #94a3b8;
+}
