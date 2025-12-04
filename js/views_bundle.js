@@ -600,7 +600,7 @@ window.APP_VIEWS = {
                 <div class="flex items-center gap-2">
                     <button onclick="trackerModule.bulkUpdateStatus('in-progress')" class="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">W toku</button>
                     <button onclick="trackerModule.bulkUpdateStatus('finished')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700">Zakończona</button>
-                    <button onclick="trackerModule.bulkToggleUrgent()" class="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700">Pilność</button>
+                    <button onclick="trackerModule.bulkToggleUrgent()" class="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700">Pilne</button>
                 </div>
             </div>
             <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">
