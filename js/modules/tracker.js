@@ -109,16 +109,46 @@ const trackerModule = (() => {
         };
     }
 
+    function renderTimelineUI() {
+        const container = document.getElementById('trTimeline');
+        const input = document.getElementById('trTimelineInput');
+        if (!container || !input) return;
+
+        const caseData = cases.find(c => c.id === currentCaseId);
+        if (!caseData) return;
+
+        container.innerHTML = (caseData.timeline || []).map(entry => {
+            return `<div class="p-2 border rounded-lg text-xs bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${entry}</div>`;
+        }).join('');
+
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = input.value.trim();
+                if (!value) return;
+                caseData.timeline = caseData.timeline || [];
+                caseData.timeline.push(value);
+                input.value = '';
+                renderTimelineUI();
+            }
+        };
+
+        const addBtn = document.getElementById('trTimelineAddBtn');
+        if (addBtn) {
+            addBtn.onclick = () => {
+                const value = input.value.trim();
+                if (!value) return;
+                caseData.timeline = caseData.timeline || [];
+                caseData.timeline.push(value);
+                input.value = '';
+                renderTimelineUI();
+            };
+        }
+    }
+
     function renderFullTracker(filter = '') {
         const listEl = document.getElementById('tracker-list');
-        const countEl = document.getElementById('tracker-case-count');
-        if (!listEl || !countEl) return;
-
-        const statusFilterEl = document.getElementById('trFilterStatus');
-        const priorityFilterEl = document.getElementById('trFilterPriority');
-        const urgentFilterEl = document.getElementById('trFilterUrgent');
-        const favoriteFilterEl = document.getElementById('trFilterFavorite');
-        const tagFilterEl = document.getElementById('trFilterTag');
+        if (!listEl) return;
 
         let filteredCases = cases.filter(c => c.archived === isArchivedView);
         
@@ -129,73 +159,85 @@ const trackerModule = (() => {
             );
         }
 
-        if (statusFilterEl && statusFilterEl.value !== 'all') {
-            filteredCases = filteredCases.filter(c => (c.status || 'new') === statusFilterEl.value);
-        }
-
-        if (priorityFilterEl && priorityFilterEl.value !== 'all') {
-            filteredCases = filteredCases.filter(c => (c.priority || 'medium') === priorityFilterEl.value);
-        }
-
-        if (urgentFilterEl && urgentFilterEl.checked) {
-            filteredCases = filteredCases.filter(c => c.urgent);
-        }
-
-        if (favoriteFilterEl && favoriteFilterEl.checked) {
-            filteredCases = filteredCases.filter(c => c.isFavorite);
-        }
-
-        if (tagFilterEl) {
-            const previousValue = tagFilterEl.value || 'all';
-            const tagSet = new Set();
-            cases.forEach(c => {
-                if (Array.isArray(c.tags)) {
-                    c.tags.forEach(t => tagSet.add(t));
-                }
-            });
-            const options = ['<option value="all">Wszystkie tagi</option>']
-                .concat(Array.from(tagSet).sort().map(tag => `<option value="${tag}">${tag}</option>`));
-            tagFilterEl.innerHTML = options.join('');
-            if (previousValue !== 'all' && tagSet.has(previousValue)) {
-                tagFilterEl.value = previousValue;
-            } else {
-                tagFilterEl.value = 'all';
-            }
-            if (tagFilterEl.value !== 'all') {
-                const selectedTag = tagFilterEl.value;
-                filteredCases = filteredCases.filter(c => Array.isArray(c.tags) && c.tags.includes(selectedTag));
-            }
-        }
-
-        const sortEl = document.getElementById('trSort');
-        const sortMethod = sortEl ? sortEl.value : 'deadline';
-        const priorityOrder = { low: 0, medium: 1, high: 2 };
-        filteredCases.sort((a, b) => {
-            if (a.urgent !== b.urgent) return b.urgent - a.urgent;
-            switch (sortMethod) {
-                case 'deadline': return new Date(a.date) - new Date(b.date);
-                case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
-                case 'priority':
-                    return (priorityOrder[(b.priority || 'medium')] || 0) - (priorityOrder[(a.priority || 'medium')] || 0);
-                case 'no': return (a.no || '').localeCompare(b.no || '');
-                default: return 0;
-            }
-        });
-        
         listEl.innerHTML = filteredCases.length 
-            ? filteredCases.map(createCaseBinder).join('') 
-            : `<div class="flex flex-col items-center justify-center py-16 text-center">
-                <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 empty-state-icon">
-                    <i data-lucide="folder-open" size="40" class="text-slate-300 dark:text-slate-600"></i>
+            ? filteredCases.map(c => {
+                let folderClasses = 'case-folder';
+                if (c.urgent) folderClasses += ' case-folder-urgent';
+                if (c.isFavorite) folderClasses += ' case-folder-favorite';
+                if (c.archived) folderClasses += ' case-folder-archived';
+
+                return `
+                    <div class="${folderClasses}" onclick="trackerModule.openCase(${c.id})">
+                        <div class="case-label">Numer sprawy</div>
+                        <div class="case-value font-bold">${c.no || 'Brak numeru'}</div>
+                        
+                        <div class="case-label">Zobowiązany</div>
+                        <div class="case-value">${c.debtor || 'Brak danych'}</div>
+                        
+                        <div class="case-label">Termin</div>
+                        <div class="case-value">${c.date ? new Date(c.date).toLocaleDateString() : 'Brak terminu'}</div>
+                        
+                        <div class="flex justify-between mt-2">
+                            <span class="text-xs px-2 py-1 rounded ${c.status === 'new' ? 'bg-blue-100 text-blue-800' : c.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                                ${c.status === 'new' ? 'Nowa' : c.status === 'in-progress' ? 'W toku' : 'Zakończona'}
+                            </span>
+                            <span class="text-xs text-slate-500">
+                                ${Math.ceil((new Date(c.date) - new Date()) / (1000 * 60 * 60 * 24))} dni
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('')
+            : `<div class="col-span-3 flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                    <i data-lucide="folder-open" size="40" class="text-slate-300"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-600 dark:text-slate-400 mb-2">Brak spraw</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Dodaj pierwszą sprawę, aby rozpocząć</p>
+                <h3 class="text-lg font-bold text-slate-600 mb-2">Brak teczek</h3>
+                <p class="text-sm text-slate-400 mb-4">Dodaj pierwszą teczkę, aby rozpocząć</p>
                 <button onclick="trackerModule.addNewCase()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">
-                    <i data-lucide="plus" size="16" class="inline mr-1"></i> Dodaj sprawę
+                    <i data-lucide="plus" size="16" class="inline mr-1"></i> Dodaj teczkę
                 </button>
             </div>`;
-        countEl.textContent = `${filteredCases.length} spraw`;
-        if (window.lucide) lucide.createIcons();
+
+        lucide.createIcons();
+    }
+
+    function showCaseTab(tabName) {
+        ['details', 'documents', 'history'].forEach(tab => {
+            const el = document.getElementById(`case-${tab}-tab`);
+            if (el) el.classList.toggle('hidden', tab !== tabName);
+        });
+        
+        const tabs = document.querySelectorAll('.case-tab');
+        tabs.forEach(tab => {
+            tab.classList.toggle('case-tab-active', tab.textContent.toLowerCase().includes(tabName));
+        });
+    }
+
+    function bulkUpdateStatus(newStatus) {
+        const selectedCases = Array.from(document.querySelectorAll('input[type="checkbox"][data-case-id]:checked')).map(cb => cb.getAttribute('data-case-id'));
+        selectedCases.forEach(async id => {
+            const caseData = cases.find(c => c.id === parseInt(id, 10));
+            if (caseData) {
+                caseData.status = newStatus;
+                await saveCaseToDB(caseData);
+            }
+        });
+        renderFullTracker();
+        if (window.Toast) Toast.success(`Status ustawiony na '${newStatus}' dla ${selectedCases.length} spraw.`);
+    }
+
+    function bulkToggleUrgent() {
+        const selectedCases = Array.from(document.querySelectorAll('input[type="checkbox"][data-case-id]:checked')).map(cb => cb.getAttribute('data-case-id'));
+        selectedCases.forEach(async id => {
+            const caseData = cases.find(c => c.id === parseInt(id, 10));
+            if (caseData) {
+                caseData.urgent = !caseData.urgent;
+                await saveCaseToDB(caseData);
+            }
+        });
+        renderFullTracker();
+        if (window.Toast) Toast.success(`Pilność przełączona dla ${selectedCases.length} spraw.`);
     }
 
     function openCase(id) {
@@ -217,6 +259,7 @@ const trackerModule = (() => {
 
         currentCaseTags = Array.isArray(caseData.tags) ? caseData.tags.slice() : [];
         renderTagsUI();
+        renderTimelineUI();
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
         document.getElementById('tracker-detail-view').classList.remove('translate-x-full');
@@ -278,6 +321,7 @@ const trackerModule = (() => {
             note: document.getElementById('trNote').value.trim(),
             archived: status === 'finished',
             tags: currentCaseTags.slice(),
+            timeline: cases.find(c => c.id === currentCaseId).timeline || [],
         };
 
         if (!caseData.no || !caseData.date) {
@@ -345,6 +389,7 @@ const trackerModule = (() => {
         document.getElementById('trNote').value = '';
         currentCaseTags = [];
         renderTagsUI();
+        renderTimelineUI();
         document.getElementById('tracker-case-label').textContent = 'Nowa Sprawa';
 
         document.getElementById('tracker-grid-view').classList.add('-translate-x-full');
@@ -621,6 +666,8 @@ const trackerModule = (() => {
         saveReminder,
         filterByDate,
         focusDate,
+        bulkUpdateStatus,
+        bulkToggleUrgent,
     };
 })();
 

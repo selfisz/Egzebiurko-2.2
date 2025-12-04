@@ -86,7 +86,7 @@ window.APP_VIEWS = {
     <div class="glass-panel p-6 rounded-2xl shadow-sm flex flex-col flex-1">
         <div class="flex justify-between items-center mb-6 border-b dark:border-slate-700 pb-4">
              <h2 class="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="warehouse"></i> Garaż / Ruchomości</h2>
-             <button onclick="openAddCarModal()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2">
+             <button onclick="openAddCarModal()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-2">
                 <i data-lucide="plus-circle"></i> Dodaj Pojazd
              </button>
         </div>
@@ -201,7 +201,7 @@ window.APP_VIEWS = {
      </div>
      <div class="p-4 bg-slate-50/50 dark:bg-slate-900/50">
         <div class="relative">
-            <i data-lucide="search" class="absolute left-3 top-3 text-slate-400" size="18"></i>
+            <i data-lucide="search" class="absolute left-3 top-3 text-slate-400" size="16"></i>
             <input oninput="searchBailiff(this.value)" placeholder="Szukaj po nazwisku, mieście, NIP..." class="w-full pl-10 p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none focus:border-amber-500 transition-colors">
         </div>
      </div>
@@ -344,7 +344,7 @@ window.APP_VIEWS = {
                                Zaszyfruj backup (AES-256)
                            </label>
                        </div>
-                       <input id="backupPassword" type="password" class="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Hasło do szyfrowania (min. 4 znaki)" disabled>
+                       <input id="backupPassword" type="password" class="w-full p-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white outline-none focus:border-indigo-500" placeholder="Hasło do szyfrowania (min. 4 znaki)" disabled>
                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
                            <i data-lucide="info" size="10" class="inline"></i> Backup będzie zaszyfrowany. Bez hasła nie odzyskasz danych!
                        </p>
@@ -465,7 +465,7 @@ window.APP_VIEWS = {
              <h2 class="font-bold text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
                 <i data-lucide="file-plus" size="14" class="text-indigo-600 dark:text-indigo-400"></i> Źródło
             </h2>
-            <div class="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-6 text-center hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all cursor-pointer relative group">
+            <div class="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-6 text-center hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold cursor-pointer relative group">
                 <input type="file" id="fileInput" accept=".docx" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
                 <i data-lucide="upload-cloud" class="mx-auto mb-2 text-slate-400 group-hover:text-indigo-500 transition-colors" size="24"></i>
                 <p id="fileName" class="text-xs font-bold text-slate-600 dark:text-slate-300 group-hover:text-indigo-700 truncate">Wybierz plik .docx</p>
@@ -555,208 +555,59 @@ window.APP_VIEWS = {
         </div>
     </div>
 </div>`,
-    'tracker': `<div id="reminderModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-96 shadow-2xl animate-fade">
-             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold dark:text-white">Dodaj Przypomnienie</h3>
-                <button onclick="trackerModule.closeReminderModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <p id="reminderDateDisplay" class="text-xs text-indigo-600 font-bold mb-3 uppercase tracking-wider"></p>
-            <input type="hidden" id="reminderDateInput">
-
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Treść</label>
-            <textarea id="reminderText" rows="3" class="w-full border p-3 rounded-lg text-sm dark:bg-slate-700 dark:text-white focus:border-indigo-500 outline-none mb-4" placeholder="Np. Wyślij pismo..."></textarea>
-
-            <button onclick="trackerModule.saveReminder()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors">Zapisz</button>
-        </div>
-    </div>
-    <div class="flex flex-col h-full gap-6 lg:flex-row">
-    <!-- Main content area -->
-    <div class="relative flex-1 overflow-hidden glass-panel rounded-2xl shadow-sm">
-        <!-- Grid View (List of cases) -->
-        <div id="tracker-grid-view" class="absolute inset-0 flex flex-col transition-transform duration-300 bg-white dark:bg-slate-900">
-            <div class="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
-                <h3 class="flex items-center gap-2 text-sm font-bold uppercase dark:text-white"><i data-lucide="book-marked"></i> Segregator Spraw</h3>
-                <div class="flex items-center gap-2">
-                    <div class="relative">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
-                        <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white w-48 focus:border-indigo-500 outline-none transition-colors" oninput="trackerModule.renderFullTracker(this.value)">
+    'tracker': `<div class="view-tracker p-6 h-full overflow-y-auto custom-scroll">
+                <!-- Nagłówek -->
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i data-lucide="book-marked"></i>
+                        <span>Segregator Spraw</span>
+                    </h2>
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></i>
+                            <input id="trackerSearch" type="text" placeholder="Szukaj w sprawach..." class="pl-9 pr-3 py-2 text-xs border rounded-lg w-48 focus:border-indigo-500 outline-none transition-colors">
+                        </div>
+                        <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2">
+                            <i data-lucide="plus"></i> Nowa Teczka
+                        </button>
                     </div>
-                    <div class="text-xs font-bold text-slate-500" id="tracker-case-count">Ładuję...</div>
-                    <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
-                    <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
-                    <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
                 </div>
-            </div>
-            <div id="tracker-list" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll">
-                <!-- Case binders will be injected here -->
-            </div>
-        </div>
 
-        <!-- Detail View (Editing a case) -->
-        <div id="tracker-detail-view" class="absolute inset-0 flex flex-col transition-transform duration-300 translate-x-full bg-white dark:bg-slate-800">
-             <div class="flex items-center pr-2 text-xs border-b bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
-                <button onclick="trackerModule.closeCase()" class="px-4 py-3 mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-r dark:border-slate-700"><i data-lucide="arrow-left"></i></button>
-                <div id="tracker-case-label" class="font-mono text-slate-400">Edycja sprawy...</div>
-                <button id="save-case-btn" class="px-4 py-2 ml-auto text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex items-center gap-2"><i data-lucide="save" size="14"></i> Zapisz</button>
-             </div>
-            <div class="flex-1 p-6 overflow-y-auto custom-scroll">
-                 <div class="max-w-2xl mx-auto space-y-4">
-                    <!-- Case Form Fields -->
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-2">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nr Sprawy</label>
-                            <input id="trNo" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white font-bold">
+                <!-- Lista spraw -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="tracker-list">
+                    <!-- Sprawy będą wstrzykiwane tutaj -->
+                </div>
+
+                <!-- Widok szczegółów -->
+                <div id="tracker-detail-view" class="case-detail-container fixed inset-0 z-50 bg-white translate-x-full transition-transform duration-300 ease-in-out">
+                    <div class="h-full flex flex-col">
+                        <!-- Zakładki -->
+                        <div class="case-tabs">
+                            <div class="case-tab case-tab-active" onclick="trackerModule.showCaseTab('details')">Dane sprawy</div>
+                            <div class="case-tab" onclick="trackerModule.showCaseTab('documents')">Dokumenty</div>
+                            <div class="case-tab" onclick="trackerModule.showCaseTab('history')">Historia</div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">UNP</label>
-                            <input id="trUnp" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Zobowiązany</label>
-                        <input id="trDebtor" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Wpływu</label>
-                        <input id="trDate" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
-                            <select id="trStatus" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                                <option value="new">Nowa</option>
-                                <option value="in-progress">W toku</option>
-                                <option value="finished">Zakończona</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
-                            <select id="trPriority" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
-                                <option value="low">Niski</option>
-                                <option value="medium" selected>Normalny</option>
-                                <option value="high">Wysoki</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900">
-                        <input type="checkbox" id="trUrgent" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
-                        <label for="trUrgent" class="text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">Sprawa Pilna</label>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tagi</label>
-                        <div id="trTagsContainer" class="flex flex-wrap gap-2 mb-2"></div>
-                        <input id="trTagInput" type="text" class="w-full p-2.5 border rounded-lg text-xs dark:bg-slate-700 dark:text-white" placeholder="Dodaj tag i naciśnij Enter">
-                    </div>
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Notatka</label>
-                            <button onclick="showNoteTemplateMenu(event)" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center gap-1">
-                                <i data-lucide="file-plus" size="12"></i> Wstaw szablon
-                            </button>
-                        </div>
-                        <textarea id="trNote" rows="4" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white resize-y"></textarea>
-                    </div>
-                    
-                    <!-- Attachments Section -->
-                    <div class="border-t pt-4 mt-4 dark:border-slate-700">
-                        <div class="flex items-center justify-between mb-3">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Załączniki</label>
-                            <div class="relative">
-                                <input type="file" id="attachmentInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*,.pdf" onchange="handleAttachmentUpload(event, window.currentCaseId)">
-                                <button class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center gap-1 pointer-events-none">
-                                    <i data-lucide="paperclip" size="12"></i> Dodaj plik
-                                </button>
+
+                        <!-- Zawartość -->
+                        <div class="flex-1 overflow-y-auto p-6">
+                            <!-- Formularz edycji sprawy -->
+                            <div id="case-details-tab" class="space-y-4">
+                                {{ ... istniejący formularz edycji ... }}
+                            </div>
+
+                            <!-- Dokumenty -->
+                            <div id="case-documents-tab" class="hidden">
+                                <p class="text-center text-slate-400 py-8">Sekcja dokumentów</p>
+                            </div>
+
+                            <!-- Historia -->
+                            <div id="case-history-tab" class="hidden">
+                                <p class="text-center text-slate-400 py-8">Sekcja historii</p>
                             </div>
                         </div>
-                        <div id="attachmentsList" class="space-y-2 mb-3">
-                            <!-- Attachments will be rendered here -->
-                        </div>
-                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
-                            <i data-lucide="info" size="10" class="inline"></i> Max 2MB/plik. Obrazy będą skompresowane.
-                        </div>
                     </div>
-                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right column with Calendar & Filters -->
-    <div class="lg:w-80 flex flex-col gap-6">
-        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
-            <div class="flex items-center justify-between">
-                <button onclick="trackerModule.changeMonth(-1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"><i data-lucide="chevron-left"></i></button>
-                <h3 id="calendarMonth" class="font-bold capitalize dark:text-white">...</h3>
-                <button onclick="trackerModule.changeMonth(1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"><i data-lucide="chevron-right"></i></button>
-            </div>
-            <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-4 text-xs text-center"></div>
-        </div>
-        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
-            <h3 class="flex items-center gap-2 mb-4 text-sm font-bold uppercase"><i data-lucide="filter"></i> Filtruj i Sortuj</h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sortuj po</label>
-                    <select id="trSort" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="deadline">Termin</option>
-                        <option value="added">Data dodania</option>
-                        <option value="priority">Priorytet</option>
-                        <option value="no">Sygnatura</option>
-                    </select>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
-                    <select id="trFilterStatus" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie</option>
-                        <option value="new">Nowa</option>
-                        <option value="in-progress">W toku</option>
-                        <option value="finished">Zakończona</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
-                    <select id="trFilterPriority" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie</option>
-                        <option value="low">Niski</option>
-                        <option value="medium">Normalny</option>
-                        <option value="high">Wysoki</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                        <input type="checkbox" id="trFilterUrgent" class="w-4 h-4 text-red-600 rounded">
-                        <span>Tylko pilne</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                        <input type="checkbox" id="trFilterFavorite" class="w-4 h-4 text-yellow-500 rounded">
-                        <span>Tylko ulubione</span>
-                    </label>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tag</label>
-                    <select id="trFilterTag" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie tagi</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
-            <h3 class="flex items-center gap-2 mb-4 text-sm font-bold uppercase"><i data-lucide="bell"></i> Przypomnienia</h3>
-            <div class="flex items-center gap-2 mb-3">
-                <select id="trRemindersRange" class="flex-1 p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                    <option value="7">7 dni</option>
-                    <option value="30">30 dni</option>
-                    <option value="all">Wszystkie</option>
-                </select>
-                <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                    <input type="checkbox" id="trRemindersFutureOnly" class="w-4 h-4 text-indigo-600 rounded" checked>
-                    <span>Tylko przyszłe</span>
-                </label>
-            </div>
-            <div id="tracker-reminders-list" class="space-y-2 max-h-64 overflow-y-auto custom-scroll text-xs"></div>
-        </div>
-    </div>
-    </div>
-</div>`,
+            </div>`,
     'terrain': `<div id="view-terrain" class="max-w-7xl mx-auto h-full flex flex-col gap-6">
     <div class="flex justify-between items-end mb-2">
         <div>
@@ -815,7 +666,7 @@ window.APP_VIEWS = {
             </div>
 
             <!-- TAB 2: INFORMACJE (FORM) -->
-            <div id="folder-content-info" class="hidden flex-1 p-6 overflow-y-auto custom-scroll">
+            <div id="folder-content-info" class="hidden flex-1 p-6 flex flex-col">
                  <div class="space-y-4 max-w-2xl mx-auto">
                     <!-- Podstawowe Dane -->
                     <div class="grid grid-cols-2 gap-4">
@@ -940,7 +791,7 @@ window.APP_VIEWS = {
                                 <!-- Injected JS Items -->
                             </div>
                             <div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                                 <button onclick="window.terrainModule.addNewCity()" class="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2"><i data-lucide="plus"></i> Dodaj Nową</button>
+                                 <button onclick="window.terrainModule.addNewCity()" class="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700">Dodaj Nową</button>
                             </div>
                         </div>
                     </div>
@@ -974,43 +825,43 @@ window.APP_VIEWS = {
                     <!-- 500 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">500 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="500" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="500" oninput="window.terrainModule.calcCash()">
                         <div id="val-500" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 200 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">200 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="200" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="200" oninput="window.terrainModule.calcCash()">
                         <div id="val-200" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 100 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">100 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="100" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="100" oninput="window.terrainModule.calcCash()">
                         <div id="val-100" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 50 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">50 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="50" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="50" oninput="window.terrainModule.calcCash()">
                         <div id="val-50" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 20 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">20 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="20" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="20" oninput="window.terrainModule.calcCash()">
                         <div id="val-20" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- 10 PLN -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">10 zł</div>
-                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="10" oninput="window.terrainModule.calcCash()">
+                        <input type="number" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="10" oninput="window.terrainModule.calcCash()">
                         <div id="val-10" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                     <!-- Bilon -->
                     <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                         <div class="font-bold text-slate-700 dark:text-slate-300 text-right pr-4">Bilon</div>
-                        <input type="number" step="0.01" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm focus:border-indigo-500 outline-none" data-nom="1" oninput="window.terrainModule.calcCash()">
+                        <input type="number" step="0.01" class="cash-input text-center p-1.5 border rounded bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-white focus:border-indigo-500 outline-none" data-nom="1" oninput="window.terrainModule.calcCash()">
                         <div id="val-1" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right text-sm">0.00</div>
                     </div>
                 </div>
@@ -1050,10 +901,10 @@ window.APP_VIEWS = {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="window.terrainModule.searchExternal('allegro')" class="py-3 bg-[#ff5a00] hover:bg-[#e04e00] text-white rounded-xl font-bold text-xs shadow-lg shadow-orange-200 dark:shadow-none transition-transform active:scale-95">
+                    <button onclick="window.terrainModule.searchExternal('allegro')" class="py-3 bg-[#ff5a00] hover:bg-[#e04e00] text-white rounded-lg font-bold text-xs shadow-lg shadow-orange-200 dark:shadow-none transition-transform active:scale-95">
                         Szukaj Allegro
                     </button>
-                    <button onclick="window.terrainModule.searchExternal('olx')" class="py-3 bg-[#002f34] hover:bg-[#002f34]/90 text-white rounded-xl font-bold text-xs shadow-lg shadow-slate-300 dark:shadow-none transition-transform active:scale-95">
+                    <button onclick="window.terrainModule.searchExternal('olx')" class="py-3 bg-[#002f34] hover:bg-[#002f34]/90 text-white rounded-lg font-bold text-xs shadow-lg shadow-slate-300 dark:shadow-none transition-transform active:scale-95">
                         Szukaj OLX
                     </button>
                 </div>
