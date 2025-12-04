@@ -124,6 +124,8 @@ const trackerModule = (() => {
         };
     }
 
+    let caseListClickBound = false;
+
     function renderFullTracker(filter = '') {
         const listEl = document.getElementById('tracker-list');
         const countEl = document.getElementById('tracker-case-count');
@@ -204,18 +206,23 @@ const trackerModule = (() => {
                 </div>
                 <h3 class="text-lg font-bold text-slate-600 dark:text-slate-400 mb-2">Brak spraw</h3>
                 <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Dodaj pierwszą sprawę, aby rozpocząć</p>
-                <button onclick="trackerModule.addNewCase()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">
-                    <i data-lucide="plus" size="16" class="inline mr-1"></i> Dodaj sprawę
-                </button>
             </div>`;
             countEl.textContent = '0 spraw';
             if (window.lucide) lucide.createIcons();
             return;
         }
 
-        // Przygotuj szablon trzech kolumn kanban
+        // ARCHIWUM: zwykła lista, bez kanbana i drag & drop
+        if (isArchivedView) {
+            listEl.innerHTML = filteredCases.map(createCaseBinder).join('');
+            countEl.textContent = `${filteredCases.length} spraw`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // AKTYWNE: dwie kolumny kanban (Nowe, W toku)
         listEl.innerHTML = `
-            <div id="tracker-kanban" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div id="tracker-kanban" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="kanban-column" data-status="new">
                     <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
                         <span>Nowe</span>
@@ -228,38 +235,43 @@ const trackerModule = (() => {
                     </div>
                     <div id="tracker-col-in-progress" class="space-y-3" data-status="in-progress"></div>
                 </div>
-                <div class="kanban-column" data-status="finished">
-                    <div class="kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase">
-                        <span>Zakończone</span>
-                    </div>
-                    <div id="tracker-col-finished" class="space-y-3" data-status="finished"></div>
-                </div>
             </div>`;
 
         const colNew = document.getElementById('tracker-col-new');
         const colInProgress = document.getElementById('tracker-col-in-progress');
-        const colFinished = document.getElementById('tracker-col-finished');
 
         const byStatus = {
             new: [],
             'in-progress': [],
-            finished: [],
         };
 
         filteredCases.forEach(c => {
-            const s = c.status || 'new';
+            const s = (c.status || 'new') === 'finished' ? 'in-progress' : (c.status || 'new');
             if (!byStatus[s]) byStatus[s] = [];
             byStatus[s].push(c);
         });
 
         if (colNew) colNew.innerHTML = (byStatus.new || []).map(createCaseBinder).join('');
         if (colInProgress) colInProgress.innerHTML = (byStatus['in-progress'] || []).map(createCaseBinder).join('');
-        if (colFinished) colFinished.innerHTML = (byStatus.finished || []).map(createCaseBinder).join('');
 
         countEl.textContent = `${filteredCases.length} spraw`;
 
         if (window.lucide) lucide.createIcons();
         initKanbanDragAndDrop();
+
+        // Jedno globalne nasłuchiwanie kliknięcia na teczkę
+        if (!caseListClickBound) {
+            listEl.addEventListener('click', (e) => {
+                const item = e.target.closest('.case-binder');
+                if (!item) return;
+                const idAttr = item.getAttribute('data-case-id');
+                if (!idAttr) return;
+                const id = parseInt(idAttr, 10);
+                if (Number.isNaN(id)) return;
+                openCase(id, false);
+            });
+            caseListClickBound = true;
+        }
     }
 
     function initKanbanDragAndDrop() {
@@ -596,9 +608,13 @@ const trackerModule = (() => {
     function showArchived(show) {
         isArchivedView = show;
         const archiveBtn = document.getElementById('archiveBtn');
+        const addCaseBtn = document.getElementById('addCaseBtn');
         if (archiveBtn) {
             archiveBtn.textContent = show ? 'Aktywne' : 'Archiwum';
             archiveBtn.onclick = () => showArchived(!show);
+        }
+        if (addCaseBtn) {
+            addCaseBtn.classList.toggle('hidden', show);
         }
         renderFullTracker();
     }

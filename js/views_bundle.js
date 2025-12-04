@@ -588,7 +588,7 @@ window.APP_VIEWS = {
                     <div class="text-xs font-bold text-slate-500" id="tracker-case-count">Ładuję...</div>
                     <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
                     <button onclick="trackerModule.showArchived(true)" class="px-3 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600" id="archiveBtn">Archiwum</button>
-                    <button onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
+                    <button id="addCaseBtn" onclick="trackerModule.addNewCase()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2"><i data-lucide="plus"></i> Dodaj Sprawę</button>
                 </div>
             </div>
             <!-- Pasek operacji masowych -->
