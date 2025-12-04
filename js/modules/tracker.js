@@ -64,7 +64,7 @@ const trackerModule = (() => {
         if (caseData.isFavorite) folderClasses += ' favorite';
 
         return `
-            <div class="${folderClasses} flex items-center py-3 pl-3 pr-5 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
+            <div class="${folderClasses} flex items-center py-3 pl-3 pr-6 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
                 <input type="checkbox" class="case-checkbox hidden mr-3 w-5 h-5 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
@@ -74,7 +74,7 @@ const trackerModule = (() => {
                     <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
                     ${tagsHTML}
                 </div>
-                <div class="flex items-center gap-4 text-xs text-right ml-4">
+                <div class="flex items-center gap-3 text-xs text-right ml-4 justify-end">
                     <div class="w-24">
                         <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
@@ -1162,19 +1162,57 @@ const trackerModule = (() => {
         if (!listEl) return;
 
         const todayStr = new Date().toISOString().split('T')[0];
+        // Sprawy na dziś (jak w modalu): termin = dziś + sprawy dodane do planu dnia
+        const baseCases = cases.filter(c => c.date === todayStr && !c.archived);
+        const plannedCaseTasks = dailyPlan.filter(t => t.date === todayStr && t.caseId);
+        const plannedCases = plannedCaseTasks
+            .map(t => cases.find(c => c.id === t.caseId))
+            .filter(c => c && !c.archived);
+
+        const seenIds = new Set(baseCases.map(c => c.id));
+        const mergedCases = [...baseCases];
+        for (const c of plannedCases) {
+            if (!seenIds.has(c.id)) {
+                mergedCases.push(c);
+                seenIds.add(c.id);
+            }
+        }
+
         const tasks = getTasksForDate(todayStr).filter(t => !t.caseId);
 
-        if (!tasks.length) {
-            listEl.innerHTML = '<p class="text-xs text-slate-400 italic px-2 py-1">Brak zadań na dziś</p>';
+        if (!mergedCases.length && !tasks.length) {
+            listEl.innerHTML = '<p class="text-xs text-slate-400 italic px-2 py-1">Brak planu na dziś</p>';
             return;
         }
 
-        listEl.innerHTML = tasks.map(task => `
-            <label class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer text-xs">
-                <input type="checkbox" ${task.done ? 'checked' : ''} onchange="trackerModule.toggleTaskDone(${task.id}); trackerModule.renderTodayQuickPlan();" class="w-4 h-4 text-green-600 rounded">
-                <span class="flex-1 ${task.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-100'} truncate">${task.text}</span>
-            </label>
-        `).join('');
+        const casesHTML = mergedCases.length
+            ? `
+                <div class="px-2 py-1 text-[10px] font-bold uppercase text-slate-400">Sprawy</div>
+                ${mergedCases.map(c => `
+                    <button onclick="trackerModule.openCase(${c.id}, false); document.getElementById('todayPlanPopover').classList.add('hidden');" class="w-full text-left px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-xs">
+                        <div class="flex-1 min-w-0 mr-2">
+                            <div class="font-bold text-slate-700 dark:text-slate-100 truncate">${c.no}</div>
+                            <div class="text-[10px] text-slate-400 truncate">${c.debtor || 'Brak danych'}</div>
+                        </div>
+                        <span class="text-[10px] text-slate-400">otwórz</span>
+                    </button>
+                `).join('')}
+            `
+            : '';
+
+        const tasksHTML = tasks.length
+            ? `
+                <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase text-slate-400">Zadania</div>
+                ${tasks.map(task => `
+                    <label class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer text-xs">
+                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="trackerModule.toggleTaskDone(${task.id}); trackerModule.renderTodayQuickPlan();" class="w-4 h-4 text-green-600 rounded">
+                        <span class="flex-1 ${task.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-100'} truncate">${task.text}</span>
+                    </label>
+                `).join('')}
+            `
+            : '';
+
+        listEl.innerHTML = casesHTML + tasksHTML;
     }
 
     function toggleTodayQuickPlan() {
