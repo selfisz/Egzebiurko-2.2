@@ -80,9 +80,9 @@ const trackerModule = (() => {
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
                     </div>
                     <div class="tracker-status-badge w-20 text-xs font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
-                    <div class="flex items-center gap-2">
-                        ${planIcon}
-                        ${favoriteIcon}
+                    <div class="flex items-center gap-1 icon-container">
+                        <div class="icon-wrapper">${planIcon}</div>
+                        <div class="icon-wrapper">${favoriteIcon}</div>
                     </div>
                 </div>
             </div>
@@ -508,7 +508,7 @@ const trackerModule = (() => {
                 menu.classList.toggle('hidden');
             }
         } else {
-            // Włącz tryb masowy
+            // Włącz tryb masowy - pokaż checkboxy i menu
             bulkMode = true;
             const checkboxes = document.querySelectorAll('.case-checkbox');
             checkboxes.forEach(cb => cb.classList.remove('hidden'));

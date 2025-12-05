@@ -712,20 +712,31 @@ button[onclick*="exportToPDF"]:hover {
   user-select: none;
 }
 
-/* Gwiazdka ulubionych w kartach spraw */
-.favorite-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-left: 4px;
-  margin-right: 4px;
+/* Kontener ikon w kartach spraw */
+.icon-container {
+  display: flex;
+  align-items: center;
+  gap: 1px;
 }
 
-/* Gwiazdka ulubionych w kartach spraw */
-.favorite-icon {
+/* Wrapper dla pojedynczej ikony */
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  margin-left: 4px;
-  margin-right: 4px;
+}
+
+/* Gwiazdka ulubionych - targetowanie SVG */
+.favorite-icon svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Ikona planu dnia - targetowanie SVG */
+.icon-wrapper svg {
+  width: 14px !important;
+  height: 14px !important;
 }
