@@ -524,8 +524,16 @@ const trackerModule = (() => {
         if (!bulkMode) {
             // Włącz tryb masowy - od razu pokaż checkboxy
             bulkMode = true;
+            
+            // Debug: sprawdź czy checkboxy istnieją
+            console.log('ToggleBulkMenu: szukam checkboxów...');
             const checkboxes = document.querySelectorAll('.case-checkbox');
-            checkboxes.forEach(cb => cb.classList.remove('hidden'));
+            console.log('ToggleBulkMenu: znaleziono checkboxów:', checkboxes.length);
+            
+            checkboxes.forEach(cb => {
+                console.log('ToggleBulkMenu: usuwam hidden z checkboxa');
+                cb.classList.remove('hidden');
+            });
         }
         
         // Przełącz widoczność menu z opcjami
