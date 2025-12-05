@@ -48,7 +48,7 @@ const trackerModule = (() => {
         else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
         else deadlineText = `${daysRemaining} dni`;
 
-        const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+        const favoriteIcon = `<i data-lucide="star" class="favorite-icon ${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
         const planIcon = `<i data-lucide="calendar-plus" class="text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
 
         // Tagi

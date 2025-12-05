@@ -711,3 +711,12 @@ button[onclick*="exportToPDF"]:hover {
   cursor: grab;
   user-select: none;
 }
+
+/* Gwiazdka ulubionych w kartach spraw */
+.favorite-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-left: 4px;
+  margin-right: 4px;
+}
