@@ -1319,6 +1319,7 @@ const trackerModule = (() => {
         toggleEditMode,
         toggleCaseSelection,
         selectAllCases,
+        deselectAllCases,
         toggleBulkMenu,
         exitBulkMode,
         bulkUpdateStatus,
