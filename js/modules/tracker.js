@@ -48,8 +48,8 @@ const trackerModule = (() => {
         else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
         else deadlineText = `${daysRemaining} dni`;
 
-        const favoriteIcon = `<i data-lucide="star" class="case-action-icon ${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
-        const planIcon = `<i data-lucide="calendar-plus" class="case-action-icon text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
+        const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+        const planIcon = `<i data-lucide="calendar-plus" class="text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
 
         // Tagi
         const tagsHTML = Array.isArray(caseData.tags) && caseData.tags.length > 0
@@ -75,15 +75,15 @@ const trackerModule = (() => {
                     ${tagsHTML}
                 </div>
                 <div class="flex items-center gap-3 text-xs text-right ml-4 justify-end">
-                    <div class="flex items-center gap-2 mr-2">
-                        ${planIcon}
-                        ${favoriteIcon}
-                    </div>
                     <div class="w-24">
                         <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
                     </div>
-                    <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
+                    <div class="tracker-status-badge w-20 text-xs font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
+                    <div class="flex items-center gap-2">
+                        ${planIcon}
+                        ${favoriteIcon}
+                    </div>
                 </div>
             </div>
         `;
@@ -545,30 +545,42 @@ const trackerModule = (() => {
     }
 
     async function bulkUpdateStatus(newStatus) {
+        let updatedCount = 0;
         for (const caseId of selectedCases) {
             const caseData = cases.find(c => c.id === caseId);
             if (caseData) {
                 caseData.status = newStatus;
                 caseData.archived = newStatus === 'finished';
                 await saveCaseToDB(caseData);
+                updatedCount++;
             }
         }
-        selectedCases.clear();
+
         await loadCases();
-        if (window.Toast) Toast.success(`Zaktualizowano status ${selectedCases.size} spraw`);
+        exitBulkMode();
+
+        if (window.Toast && updatedCount > 0) {
+            Toast.success(`Zaktualizowano status ${updatedCount} spraw`);
+        }
     }
 
     async function bulkToggleUrgent() {
+        let toggledCount = 0;
         for (const caseId of selectedCases) {
             const caseData = cases.find(c => c.id === caseId);
             if (caseData) {
                 caseData.urgent = !caseData.urgent;
                 await saveCaseToDB(caseData);
+                toggledCount++;
             }
         }
-        selectedCases.clear();
+
         await loadCases();
-        if (window.Toast) Toast.success(`Przełączono pilność ${selectedCases.size} spraw`);
+        exitBulkMode();
+
+        if (window.Toast && toggledCount > 0) {
+            Toast.success(`Przełączono pilność ${toggledCount} spraw`);
+        }
     }
 
     async function getNextCaseNumber() {
@@ -694,6 +706,8 @@ const trackerModule = (() => {
     }
 
     function showArchived(show) {
+        // Zmiana widoku resetuje tryb masowy, żeby nie zostawiać ukrytych checkboxów
+        exitBulkMode();
         isArchivedView = show;
         const archiveBtn = document.getElementById('archiveBtn');
         const addCaseBtn = document.getElementById('addCaseBtn');

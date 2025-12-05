@@ -514,22 +514,15 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   font-weight: 700;
 }
 
-/* Ikony akcji w kartach spraw (gwiazdka, plan dnia) */
-.case-action-icon {
+/* Badge statusu sprawy (np. "Nowa") w teczkach Terminarza */
+.tracker-status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
   height: 24px;
-  border-radius: 9999px;
-}
-
-.case-action-icon:hover {
-  background-color: rgba(148, 163, 184, 0.15);
-}
-
-.dark .case-action-icon:hover {
-  background-color: rgba(51, 65, 85, 0.6);
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1;
 }
 
 /* ===== KARTY INFORMACYJNE PODGLĄDU SPRAWY ===== */
