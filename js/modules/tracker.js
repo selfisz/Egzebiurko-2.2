@@ -521,28 +521,16 @@ const trackerModule = (() => {
     function toggleBulkMenu() {
         const menu = document.getElementById('bulk-select-menu');
         
-        if (bulkMode) {
-            // Jeśli tryb masowy jest włączony, tylko przełącz menu
-            if (menu) {
-                menu.classList.toggle('hidden');
-            }
-        } else {
-            // Włącz tryb masowy - pokaż checkboxy i menu z przyciskami
+        if (!bulkMode) {
+            // Włącz tryb masowy - od razu pokaż checkboxy
             bulkMode = true;
             const checkboxes = document.querySelectorAll('.case-checkbox');
             checkboxes.forEach(cb => cb.classList.remove('hidden'));
-            
-            // Dodaj przyciski sterujące do menu
-            if (menu) {
-                menu.innerHTML = `
-                    <div class="flex flex-col gap-2 p-2">
-                        <button onclick="trackerModule.selectAllCases()" class="px-3 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">Zaznacz wszystko</button>
-                        <button onclick="trackerModule.deselectAllCases()" class="px-3 py-1 text-xs bg-slate-500 text-white rounded hover:bg-slate-600">Odznacz wszystko</button>
-                        <button onclick="trackerModule.exitBulkMode()" class="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600">Anuluj</button>
-                    </div>
-                `;
-                menu.classList.remove('hidden');
-            }
+        }
+        
+        // Przełącz widoczność menu z opcjami
+        if (menu) {
+            menu.classList.toggle('hidden');
         }
     }
     
