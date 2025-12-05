@@ -65,7 +65,7 @@ const trackerModule = (() => {
 
         return `
             <div class="${folderClasses} flex items-center py-3 pl-3 pr-6 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
-                <input type="checkbox" class="case-checkbox hidden mr-3 w-5 h-5 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
+                <input type="checkbox" class="case-checkbox hidden mr-3 w-6 h-6 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -74,7 +74,7 @@ const trackerModule = (() => {
                     <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
                     ${tagsHTML}
                 </div>
-                <div class="flex items-center gap-3 text-xs text-right ml-4 justify-end">
+                <div class="flex items-center gap-1 text-xs text-right ml-4 justify-end">
                     <div class="w-24">
                         <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
@@ -499,6 +499,25 @@ const trackerModule = (() => {
         if (menu) menu.classList.add('hidden');
     }
 
+    function selectAllCases() {
+        const checkboxes = document.querySelectorAll('.case-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            const caseId = parseInt(cb.dataset.caseId);
+            selectedCases.add(caseId);
+        });
+        updateBulkActionsBar();
+    }
+
+    function deselectAllCases() {
+        const checkboxes = document.querySelectorAll('.case-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+        selectedCases.clear();
+        updateBulkActionsBar();
+    }
+
     function toggleBulkMenu() {
         const menu = document.getElementById('bulk-select-menu');
         
@@ -508,11 +527,22 @@ const trackerModule = (() => {
                 menu.classList.toggle('hidden');
             }
         } else {
-            // Włącz tryb masowy - pokaż checkboxy i menu
+            // Włącz tryb masowy - pokaż checkboxy i menu z przyciskami
             bulkMode = true;
             const checkboxes = document.querySelectorAll('.case-checkbox');
             checkboxes.forEach(cb => cb.classList.remove('hidden'));
-            if (menu) menu.classList.remove('hidden');
+            
+            // Dodaj przyciski sterujące do menu
+            if (menu) {
+                menu.innerHTML = `
+                    <div class="flex flex-col gap-2 p-2">
+                        <button onclick="trackerModule.selectAllCases()" class="px-3 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">Zaznacz wszystko</button>
+                        <button onclick="trackerModule.deselectAllCases()" class="px-3 py-1 text-xs bg-slate-500 text-white rounded hover:bg-slate-600">Odznacz wszystko</button>
+                        <button onclick="trackerModule.exitBulkMode()" class="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600">Anuluj</button>
+                    </div>
+                `;
+                menu.classList.remove('hidden');
+            }
         }
     }
     
