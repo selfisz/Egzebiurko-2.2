@@ -514,6 +514,24 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   font-weight: 700;
 }
 
+/* Ikony akcji w kartach spraw (gwiazdka, plan dnia) */
+.case-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+}
+
+.case-action-icon:hover {
+  background-color: rgba(148, 163, 184, 0.15);
+}
+
+.dark .case-action-icon:hover {
+  background-color: rgba(51, 65, 85, 0.6);
+}
+
 /* ===== KARTY INFORMACYJNE PODGLĄDU SPRAWY ===== */
 .case-preview-card {
   background: white;

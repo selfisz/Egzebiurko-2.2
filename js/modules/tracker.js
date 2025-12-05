@@ -48,8 +48,8 @@ const trackerModule = (() => {
         else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
         else deadlineText = `${daysRemaining} dni`;
 
-        const favoriteIcon = `<i data-lucide="star" class="${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
-        const planIcon = `<i data-lucide="calendar-plus" class="text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
+        const favoriteIcon = `<i data-lucide="star" class="case-action-icon ${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
+        const planIcon = `<i data-lucide="calendar-plus" class="case-action-icon text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
 
         // Tagi
         const tagsHTML = Array.isArray(caseData.tags) && caseData.tags.length > 0
@@ -75,15 +75,15 @@ const trackerModule = (() => {
                     ${tagsHTML}
                 </div>
                 <div class="flex items-center gap-3 text-xs text-right ml-4 justify-end">
+                    <div class="flex items-center gap-2 mr-2">
+                        ${planIcon}
+                        ${favoriteIcon}
+                    </div>
                     <div class="w-24">
                         <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
                         <div class="text-[10px] text-slate-400">${deadlineText}</div>
                     </div>
                     <div class="w-20 px-2 py-1 text-center font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
-                    <div class="flex items-center gap-2">
-                        ${planIcon}
-                        ${favoriteIcon}
-                    </div>
                 </div>
             </div>
         `;
@@ -721,6 +721,40 @@ const trackerModule = (() => {
         if (modal) modal.classList.add('hidden');
     }
 
+    function loadTrackerReminders() {
+        let reminders = {};
+        try {
+            const raw = localStorage.getItem('tracker_reminders');
+            reminders = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            console.error('Error parsing reminders:', e);
+            reminders = {};
+        }
+
+        // Normalizuj: każda wartość musi być tablicą stringów
+        let changed = false;
+        Object.entries(reminders).forEach(([date, value]) => {
+            if (Array.isArray(value)) return;
+            if (typeof value === 'string' && value.trim()) {
+                reminders[date] = [value];
+                changed = true;
+            } else {
+                delete reminders[date];
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            try {
+                localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+            } catch (e) {
+                console.error('Error saving normalized reminders:', e);
+            }
+        }
+
+        return reminders;
+    }
+
     async function saveReminder() {
         const date = document.getElementById('reminderDateInput').value;
         const text = document.getElementById('reminderText').value.trim();
@@ -733,14 +767,7 @@ const trackerModule = (() => {
             return;
         }
 
-        let reminders = {};
-        try {
-            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        } catch (e) {
-            console.error('Error parsing reminders:', e);
-            reminders = {};
-        }
-        
+        const reminders = loadTrackerReminders();
         if (!reminders[date]) reminders[date] = [];
         reminders[date].push(text);
         localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
@@ -773,12 +800,7 @@ const trackerModule = (() => {
         
         for (let i = 0; i < startDay; i++) calendarGrid.innerHTML += '<div></div>';
 
-        let reminders = {};
-        try {
-            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        } catch (e) {
-            reminders = {};
-        }
+        const reminders = loadTrackerReminders();
 
         const today = new Date();
 
@@ -965,6 +987,27 @@ const trackerModule = (() => {
         return dailyPlan.filter(t => t.date === dateStr);
     }
 
+    function getCasesForDate(dateStr) {
+        // Sprawy na ten dzień: połączenie spraw z terminem = data
+        // oraz spraw ręcznie dodanych do planu dnia (dailyPlan z caseId)
+        const baseCases = cases.filter(c => c.date === dateStr && !c.archived);
+        const plannedCaseTasks = dailyPlan.filter(t => t.date === dateStr && t.caseId);
+        const plannedCases = plannedCaseTasks
+            .map(t => cases.find(c => c.id === t.caseId))
+            .filter(c => c && !c.archived);
+
+        const seenIds = new Set(baseCases.map(c => c.id));
+        const mergedCases = [...baseCases];
+        for (const c of plannedCases) {
+            if (!seenIds.has(c.id)) {
+                mergedCases.push(c);
+                seenIds.add(c.id);
+            }
+        }
+
+        return mergedCases;
+    }
+
     function addCaseToDailyPlan(caseId) {
         const caseData = cases.find(c => c.id === caseId);
         if (!caseData) return;
@@ -991,25 +1034,7 @@ const trackerModule = (() => {
         const d = new Date(dateStr);
         dateDisplay.textContent = `Plan na ${d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`;
         
-        // Sprawy na ten dzień: połączenie spraw z terminem = data
-        // oraz spraw ręcznie dodanych do planu dnia (dailyPlan z caseId)
-        const baseCases = cases.filter(c => c.date === dateStr && !c.archived);
-        const plannedCaseTasks = dailyPlan.filter(t => t.date === dateStr && t.caseId);
-        const plannedCases = plannedCaseTasks
-            .map(t => cases.find(c => c.id === t.caseId))
-            .filter(c => c && !c.archived);
-
-        // Usuń duplikaty po id
-        const seenIds = new Set(baseCases.map(c => c.id));
-        const mergedCases = [...baseCases];
-        for (const c of plannedCases) {
-            if (!seenIds.has(c.id)) {
-                mergedCases.push(c);
-                seenIds.add(c.id);
-            }
-        }
-
-        const casesOnDay = mergedCases;
+        const casesOnDay = getCasesForDate(dateStr);
         if (casesOnDay.length === 0) {
             casesContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak spraw na ten dzień</p>';
         } else {
@@ -1088,25 +1113,22 @@ const trackerModule = (() => {
         const remindersContainer = document.getElementById('dayPlanReminders');
         if (!remindersContainer) return;
         
-        let reminders = {};
-        try {
-            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        } catch (e) {
-            reminders = {};
-        }
-        
-        const reminderText = reminders[dateStr];
-        if (!reminderText) {
+        const reminders = loadTrackerReminders();
+        const items = Array.isArray(reminders[dateStr]) ? reminders[dateStr] : [];
+
+        if (!items.length) {
             remindersContainer.innerHTML = '<p class="text-xs text-slate-400 italic">Brak przypomnień na ten dzień</p>';
         } else {
-            remindersContainer.innerHTML = `
-                <div class="p-3 border dark:border-slate-600 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-between">
-                    <div class="flex-1 text-sm dark:text-white">${reminderText}</div>
-                    <button onclick="trackerModule.deleteReminder('${dateStr}'); trackerModule.renderDayPlanReminders('${dateStr}')" class="text-red-500 hover:text-red-700">
-                        <i data-lucide="trash-2" size="16"></i>
-                    </button>
+            remindersContainer.innerHTML = items.map((text, idx) => `
+                <div class="p-3 border dark:border-slate-600 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-between mb-2 last:mb-0">
+                    <div class="flex-1 text-sm dark:text-white">${text}</div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="trackerModule.deleteSingleReminder('${dateStr}', ${idx}); trackerModule.renderDayPlanReminders('${dateStr}')" class="text-red-500 hover:text-red-700">
+                            <i data-lucide="trash-2" size="16"></i>
+                        </button>
+                    </div>
                 </div>
-            `;
+            `).join('');
         }
         if (window.lucide) lucide.createIcons();
     }
@@ -1124,14 +1146,9 @@ const trackerModule = (() => {
             return;
         }
         
-        let reminders = {};
-        try {
-            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        } catch (e) {
-            reminders = {};
-        }
-        
-        reminders[dateStr] = text;
+        const reminders = loadTrackerReminders();
+        if (!reminders[dateStr]) reminders[dateStr] = [];
+        reminders[dateStr].push(text);
         localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
         
         input.value = '';
@@ -1142,17 +1159,24 @@ const trackerModule = (() => {
     }
 
     function deleteReminder(dateStr) {
-        let reminders = {};
-        try {
-            reminders = JSON.parse(localStorage.getItem('tracker_reminders') || '{}');
-        } catch (e) {
-            reminders = {};
-        }
-        
+        const reminders = loadTrackerReminders();
         delete reminders[dateStr];
         localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
         renderCalendar();
         
+        if (window.Toast) window.Toast.success('Usunięto przypomnienie');
+    }
+
+    function deleteSingleReminder(dateStr, index) {
+        const reminders = loadTrackerReminders();
+        if (!Array.isArray(reminders[dateStr])) return;
+        reminders[dateStr].splice(index, 1);
+        if (!reminders[dateStr].length) {
+            delete reminders[dateStr];
+        }
+        localStorage.setItem('tracker_reminders', JSON.stringify(reminders));
+        renderCalendar();
+
         if (window.Toast) window.Toast.success('Usunięto przypomnienie');
     }
 
@@ -1162,33 +1186,18 @@ const trackerModule = (() => {
         if (!listEl) return;
 
         const todayStr = new Date().toISOString().split('T')[0];
-        // Sprawy na dziś (jak w modalu): termin = dziś + sprawy dodane do planu dnia
-        const baseCases = cases.filter(c => c.date === todayStr && !c.archived);
-        const plannedCaseTasks = dailyPlan.filter(t => t.date === todayStr && t.caseId);
-        const plannedCases = plannedCaseTasks
-            .map(t => cases.find(c => c.id === t.caseId))
-            .filter(c => c && !c.archived);
-
-        const seenIds = new Set(baseCases.map(c => c.id));
-        const mergedCases = [...baseCases];
-        for (const c of plannedCases) {
-            if (!seenIds.has(c.id)) {
-                mergedCases.push(c);
-                seenIds.add(c.id);
-            }
-        }
-
+        const todayCases = getCasesForDate(todayStr);
         const tasks = getTasksForDate(todayStr).filter(t => !t.caseId);
 
-        if (!mergedCases.length && !tasks.length) {
+        if (!todayCases.length && !tasks.length) {
             listEl.innerHTML = '<p class="text-xs text-slate-400 italic px-2 py-1">Brak planu na dziś</p>';
             return;
         }
 
-        const casesHTML = mergedCases.length
+        const casesHTML = todayCases.length
             ? `
                 <div class="px-2 py-1 text-[10px] font-bold uppercase text-slate-400">Sprawy</div>
-                ${mergedCases.map(c => `
+                ${todayCases.map(c => `
                     <button onclick="trackerModule.openCase(${c.id}, false); document.getElementById('todayPlanPopover').classList.add('hidden');" class="w-full text-left px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-xs">
                         <div class="flex-1 min-w-0 mr-2">
                             <div class="font-bold text-slate-700 dark:text-slate-100 truncate">${c.no}</div>
@@ -1299,6 +1308,7 @@ const trackerModule = (() => {
         addTaskFromModal,
         addReminderFromModal,
         deleteReminder,
+        deleteSingleReminder,
         renderTodayQuickPlan,
         toggleTodayQuickPlan,
     };

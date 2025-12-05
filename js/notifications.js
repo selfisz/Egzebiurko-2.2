@@ -55,7 +55,11 @@ async function checkNotifications() {
                         const daysDiff = Math.round((dateObj - startOfToday) / (1000 * 60 * 60 * 24));
                         const prettyDate = dateObj.toLocaleDateString('pl-PL');
 
-                        items.forEach((text, idx) => {
+                        const arr = Array.isArray(items)
+                            ? items
+                            : (typeof items === 'string' && items.trim() ? [items] : []);
+
+                        arr.forEach((text, idx) => {
                             const whenText = daysDiff === 0
                                 ? 'DZIŚ'
                                 : daysDiff === 1
