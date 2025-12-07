@@ -469,6 +469,7 @@ const trackerModule = (() => {
     let selectedCases = new Set();
 
     function enterBulkMode() {
+        console.log('enterBulkMode() wywołany - tworzę checkboxy');
         bulkMode = true;
         selectedCases.clear();
         
