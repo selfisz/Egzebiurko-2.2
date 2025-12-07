@@ -646,6 +646,10 @@ window.APP_VIEWS = {
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Wpływu</label>
                         <input id="trDate" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Termin (30 dni)</label>
+                        <input id="trDeadline" type="date" class="w-full p-2.5 border rounded-lg text-sm dark:bg-slate-700 dark:text-white">
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>

@@ -42,11 +42,28 @@ const trackerModule = (() => {
         const statusLabels = { new: 'Nowa', 'in-progress': 'W toku', finished: 'Zakończona' };
         const urgentStyle = caseData.urgent ? 'border-red-200 dark:border-red-700' : 'border-slate-200 dark:border-slate-700';
         
-        const daysRemaining = Math.ceil((new Date(caseData.date) - new Date()) / (1000 * 60 * 60 * 24));
+        // Oblicz dni do terminu (deadline)
+        const deadlineDate = new Date(caseData.deadline || caseData.date);
+        const daysRemaining = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
         let deadlineText = '';
-        if (daysRemaining < 0) deadlineText = `<span class="font-bold text-red-500">${Math.abs(daysRemaining)} dni po terminie</span>`;
-        else if (daysRemaining === 0) deadlineText = `<span class="font-bold text-orange-500">Termin dzisiaj</span>`;
-        else deadlineText = `${daysRemaining} dni`;
+        let deadlineColor = '';
+        
+        if (daysRemaining < 0) {
+            deadlineText = `Przeterminowane ${Math.abs(daysRemaining)} dni`;
+            deadlineColor = 'text-red-500';
+        } else if (daysRemaining === 0) {
+            deadlineText = 'Termin dzisiaj';
+            deadlineColor = 'text-orange-500';
+        } else if (daysRemaining <= 7) {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-orange-500';
+        } else if (daysRemaining <= 14) {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-blue-500';
+        } else {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-green-500';
+        }
 
         const favoriteIcon = `<i data-lucide="star" class="favorite-icon ${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400" onclick="event.stopPropagation(); trackerModule.toggleFavorite(${caseData.id})"></i>`;
         const planIcon = `<i data-lucide="calendar-plus" class="text-slate-300 hover:text-green-500" onclick="event.stopPropagation(); trackerModule.addCaseToDailyPlan(${caseData.id})" title="Dodaj do planu dnia"></i>`;
@@ -74,9 +91,10 @@ const trackerModule = (() => {
                     ${tagsHTML}
                 </div>
                 <div class="flex items-center gap-1 text-xs text-right ml-4 justify-end">
-                    <div class="w-24">
-                        <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
-                        <div class="text-[10px] text-slate-400">${deadlineText}</div>
+                    <div class="w-32">
+                        <div class="font-bold text-slate-600 dark:text-slate-300">📅 ${new Date(caseData.date).toLocaleDateString()}</div>
+                        <div class="text-[10px] font-bold ${deadlineColor}">⏰ ${deadlineText}</div>
+                        ${caseData.deadline ? `<div class="text-[9px] text-slate-500">Termin: ${new Date(caseData.deadline).toLocaleDateString()}</div>` : ''}
                     </div>
                     <div class="tracker-status-badge w-20 text-xs font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
                     <div class="flex items-center gap-1 icon-container">
@@ -691,6 +709,7 @@ const trackerModule = (() => {
             unp: document.getElementById('trUnp').value.trim(),
             debtor: document.getElementById('trDebtor').value.trim(),
             date: document.getElementById('trDate').value,
+            deadline: document.getElementById('trDeadline').value,
             status: status,
             urgent: document.getElementById('trUrgent').checked,
             priority: priorityEl ? priorityEl.value : 'medium',
@@ -758,7 +777,20 @@ const trackerModule = (() => {
 
         document.getElementById('trUnp').value = '';
         document.getElementById('trDebtor').value = '';
-        document.getElementById('trDate').value = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('trDate').value = today;
+        
+        // Auto-oblicz termin (data + 30 dni)
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 30);
+        document.getElementById('trDeadline').value = deadline.toISOString().split('T')[0];
+        
+        // Event listener: auto-aktualizuj termin przy zmianie daty
+        document.getElementById('trDate').onchange = function() {
+            const newDeadline = new Date(this.value);
+            newDeadline.setDate(newDeadline.getDate() + 30);
+            document.getElementById('trDeadline').value = newDeadline.toISOString().split('T')[0];
+        };
         document.getElementById('trStatus').value = 'new';
         document.getElementById('trUrgent').checked = false;
         const priorityEl = document.getElementById('trPriority');
