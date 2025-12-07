@@ -525,13 +525,13 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 }
 
 /* Zaznaczony stan - PEŁNE WYPEŁNIENIE */
-.bulk-checkbox:checked {
+.bulk-checkbox.is-checked {
   background-color: #6366f1 !important;
   border-color: #6366f1 !important;
 }
 
 /* Ptaszek w zaznaczonym stanie */
-.bulk-checkbox:checked::before {
+.bulk-checkbox.is-checked::before {
   content: "✓" !important;
   color: #ffffff !important;
   font-size: 18px !important;
@@ -541,7 +541,7 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 }
 
 /* Hover efekt */
-.bulk-checkbox:hover:not(:checked) {
+.bulk-checkbox:hover:not(.is-checked) {
   border-color: #4f46e5 !important;
   background-color: #f5f3ff !important;
 }

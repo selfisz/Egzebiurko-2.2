@@ -606,6 +606,7 @@ const trackerModule = (() => {
         const checkboxes = document.querySelectorAll('.bulk-checkbox');
         checkboxes.forEach(cb => {
             cb.checked = true;
+            cb.classList.add('is-checked');
             const caseId = parseInt(cb.dataset.caseId);
             selectedCases.add(caseId);
         });
@@ -616,6 +617,7 @@ const trackerModule = (() => {
         const checkboxes = document.querySelectorAll('.bulk-checkbox');
         checkboxes.forEach(cb => {
             cb.checked = false;
+            cb.classList.remove('is-checked');
         });
         selectedCases.clear();
         updateBulkActionsBar();
