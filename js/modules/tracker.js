@@ -472,33 +472,6 @@ const trackerModule = (() => {
         updateBulkActionsBar();
     }
 
-    function selectAllCases(forceChecked) {
-        const checkboxes = document.querySelectorAll('.case-checkbox');
-        let targetChecked;
-
-        if (typeof forceChecked === 'boolean') {
-            targetChecked = forceChecked;
-        } else {
-            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
-            targetChecked = !allChecked;
-        }
-        
-        checkboxes.forEach(cb => {
-            const caseId = parseInt(cb.getAttribute('data-case-id'));
-            cb.checked = targetChecked;
-            if (targetChecked) {
-                selectedCases.add(caseId);
-            } else {
-                selectedCases.delete(caseId);
-            }
-        });
-        updateBulkActionsBar();
-        
-        // Zamknij menu po wyborze opcji
-        const menu = document.getElementById('bulk-select-menu');
-        if (menu) menu.classList.add('hidden');
-    }
-
     function selectAllCases() {
         const checkboxes = document.querySelectorAll('.case-checkbox');
         checkboxes.forEach(cb => {
@@ -520,38 +493,33 @@ const trackerModule = (() => {
 
     function toggleBulkMenu() {
         const menu = document.getElementById('bulk-select-menu');
-        
+
+        // Włączenie trybu masowego: sterujemy widocznością checkboxów przez klasę na body
         if (!bulkMode) {
-            // Włącz tryb masowy - od razu pokaż checkboxy
             bulkMode = true;
-            
-            // Debug: sprawdź czy checkboxy istnieją
-            console.log('ToggleBulkMenu: szukam checkboxów...');
-            const checkboxes = document.querySelectorAll('.case-checkbox');
-            console.log('ToggleBulkMenu: znaleziono checkboxów:', checkboxes.length);
-            
-            checkboxes.forEach(cb => {
-                console.log('ToggleBulkMenu: usuwam hidden z checkboxa');
-                cb.classList.remove('hidden');
-            });
+            document.body.classList.add('tracker-bulk-mode');
         }
-        
+
         // Przełącz widoczność menu z opcjami
         if (menu) {
             menu.classList.toggle('hidden');
         }
     }
-    
+
     function exitBulkMode() {
         bulkMode = false;
         const menu = document.getElementById('bulk-select-menu');
         const checkboxes = document.querySelectorAll('.case-checkbox');
-        
+
+        // Ukryj menu operacji masowych
+        if (menu) menu.classList.add('hidden');
+
+        // Wyczyść zaznaczenia, ale nie manipuluj klasą hidden – to robi CSS przez tracker-bulk-mode
         checkboxes.forEach(cb => {
-            cb.classList.add('hidden');
             cb.checked = false;
         });
-        if (menu) menu.classList.add('hidden');
+
+        document.body.classList.remove('tracker-bulk-mode');
         selectedCases.clear();
         updateBulkActionsBar();
     }
