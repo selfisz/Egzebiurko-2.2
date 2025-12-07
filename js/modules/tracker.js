@@ -65,7 +65,6 @@ const trackerModule = (() => {
 
         return `
             <div class="${folderClasses} flex items-center py-3 pl-3 pr-6 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
-                <input type="checkbox" class="case-checkbox mr-3 text-indigo-600 rounded" data-case-id="${caseData.id}" onclick="event.stopPropagation(); trackerModule.toggleCaseSelection(${caseData.id})">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -220,6 +219,7 @@ const trackerModule = (() => {
 
         // ARCHIWUM: zwykła lista, bez kanbana i drag & drop
         if (isArchivedView) {
+            exitBulkMode(); // Wyjdź z trybu masowego w archiwum
             listEl.innerHTML = filteredCases.map(createCaseBinder).join('');
             countEl.textContent = `${filteredCases.length} spraw`;
             if (window.lucide) lucide.createIcons();
@@ -277,6 +277,11 @@ const trackerModule = (() => {
 
         if (window.lucide) lucide.createIcons();
         initKanbanDragAndDrop();
+
+        // Przywróć tryb masowy jeśli był aktywny
+        if (bulkMode) {
+            enterBulkMode();
+        }
 
         // Jedno globalne nasłuchiwanie kliknięcia na teczkę
         if (!caseListClickBound) {
@@ -460,8 +465,63 @@ const trackerModule = (() => {
         }
     }
 
-    // Operacje masowe
+    // Operacje masowe - NOWA IMPLEMENTACJA
+    let bulkMode = false;
     let selectedCases = new Set();
+
+    function enterBulkMode() {
+        bulkMode = true;
+        selectedCases.clear();
+        
+        // Dodaj checkboxy do każdej sprawy
+        const caseBinders = document.querySelectorAll('.case-binder');
+        caseBinders.forEach(binder => {
+            const caseId = binder.dataset.caseId;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'bulk-checkbox';
+            checkbox.dataset.caseId = caseId;
+            checkbox.style.cssText = `
+                width: 40px;
+                height: 24px;
+                border-radius: 9999px;
+                border: 2px solid #6366f1;
+                background-color: transparent;
+                margin-right: 12px;
+                cursor: pointer;
+                appearance: none;
+                -webkit-appearance: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            checkbox.onclick = (e) => {
+                e.stopPropagation();
+                toggleCaseSelection(parseInt(caseId));
+            };
+            binder.insertBefore(checkbox, binder.firstChild);
+        });
+        
+        // Pokaż menu
+        const menu = document.getElementById('bulk-select-menu');
+        if (menu) menu.classList.remove('hidden');
+        updateBulkActionsBar();
+    }
+
+    function exitBulkMode() {
+        bulkMode = false;
+        
+        // Usuń wszystkie checkboxy
+        const checkboxes = document.querySelectorAll('.bulk-checkbox');
+        checkboxes.forEach(cb => cb.remove());
+        
+        // Ukryj menu
+        const menu = document.getElementById('bulk-select-menu');
+        if (menu) menu.classList.add('hidden');
+        
+        selectedCases.clear();
+        updateBulkActionsBar();
+    }
 
     function toggleCaseSelection(caseId) {
         if (selectedCases.has(caseId)) {
@@ -473,7 +533,7 @@ const trackerModule = (() => {
     }
 
     function selectAllCases() {
-        const checkboxes = document.querySelectorAll('.case-checkbox');
+        const checkboxes = document.querySelectorAll('.bulk-checkbox');
         checkboxes.forEach(cb => {
             cb.checked = true;
             const caseId = parseInt(cb.dataset.caseId);
@@ -483,7 +543,7 @@ const trackerModule = (() => {
     }
 
     function deselectAllCases() {
-        const checkboxes = document.querySelectorAll('.case-checkbox');
+        const checkboxes = document.querySelectorAll('.bulk-checkbox');
         checkboxes.forEach(cb => {
             cb.checked = false;
         });
@@ -492,51 +552,14 @@ const trackerModule = (() => {
     }
 
     function toggleBulkMenu() {
-        const menu = document.getElementById('bulk-select-menu');
-
-        // Włączenie trybu masowego: pokaż checkboxy przez inline styles
-        if (!bulkMode) {
-            bulkMode = true;
-            document.body.classList.add('tracker-bulk-mode');
-
-            // Pokaż checkboxy i ustaw puste
-            const checkboxes = document.querySelectorAll('.case-checkbox');
-            checkboxes.forEach(cb => {
-                cb.style.display = 'inline-flex';
-                cb.style.width = '40px';
-                cb.style.height = '24px';
-                cb.style.borderRadius = '9999px';
-                cb.style.border = '2px solid #6366f1';
-                cb.style.backgroundColor = 'transparent';
-                cb.checked = false;
-            });
-            selectedCases.clear();
-            updateBulkActionsBar();
+        if (bulkMode) {
+            // Tryb masowy włączony - tylko przełącz menu
+            const menu = document.getElementById('bulk-select-menu');
+            if (menu) menu.classList.toggle('hidden');
+        } else {
+            // Włącz tryb masowy
+            enterBulkMode();
         }
-
-        // Przełącz widoczność menu z opcjami
-        if (menu) {
-            menu.classList.toggle('hidden');
-        }
-    }
-
-    function exitBulkMode() {
-        bulkMode = false;
-        const menu = document.getElementById('bulk-select-menu');
-        const checkboxes = document.querySelectorAll('.case-checkbox');
-
-        // Ukryj menu operacji masowych
-        if (menu) menu.classList.add('hidden');
-
-        // Ukryj checkboxy i wyczyść zaznaczenia
-        checkboxes.forEach(cb => {
-            cb.style.display = 'none';
-            cb.checked = false;
-        });
-
-        document.body.classList.remove('tracker-bulk-mode');
-        selectedCases.clear();
-        updateBulkActionsBar();
     }
 
     function updateBulkActionsBar() {
