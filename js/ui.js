@@ -11,7 +11,13 @@ async function renderDashboardStats() {
     if (!container) return;
     
     try {
-        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        // Use existing database from state instead of reopening
+        if (!state.db) {
+            console.warn('Database not ready yet for dashboard stats');
+            return;
+        }
+        
+        const db = state.db;
         const cases = await db.getAll('tracker');
         const cars = db.objectStoreNames.contains('garage') ? await db.getAll('garage') : [];
         const notes = db.objectStoreNames.contains('notes') ? await db.getAll('notes') : [];
@@ -153,7 +159,13 @@ async function renderDashboardWidgets() {
     if (!container) return;
 
     try {
-        const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+        // Use existing database from state instead of reopening
+        if (!state.db) {
+            console.warn('Database not ready yet');
+            return;
+        }
+        
+        const db = state.db;
         const cases = await db.getAll('tracker');
         
         // === WIDGET STATYSTYK ===
