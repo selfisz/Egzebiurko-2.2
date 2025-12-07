@@ -514,20 +514,6 @@ const trackerModule = (() => {
             checkbox.type = 'checkbox';
             checkbox.className = 'bulk-checkbox';
             checkbox.dataset.caseId = caseId;
-            checkbox.style.cssText = `
-                width: 40px !important;
-                height: 24px !important;
-                border-radius: 9999px !important;
-                border: 2px solid #6366f1 !important;
-                background-color: transparent !important;
-                margin-right: 12px !important;
-                cursor: pointer !important;
-                appearance: none !important;
-                -webkit-appearance: none !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            `;
             checkbox.onclick = (e) => {
                 e.stopPropagation();
                 toggleCaseSelection(parseInt(caseId));
