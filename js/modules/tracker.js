@@ -590,10 +590,14 @@ const trackerModule = (() => {
     }
 
     function toggleCaseSelection(caseId) {
+        const checkbox = document.querySelector(`.bulk-checkbox[data-case-id="${caseId}"]`);
+        
         if (selectedCases.has(caseId)) {
             selectedCases.delete(caseId);
+            if (checkbox) checkbox.checked = false;
         } else {
             selectedCases.add(caseId);
+            if (checkbox) checkbox.checked = true;
         }
         updateBulkActionsBar();
     }

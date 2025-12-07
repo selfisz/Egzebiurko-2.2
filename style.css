@@ -531,7 +531,7 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 }
 
 /* Ptaszek w zaznaczonym stanie */
-.bulk-checkbox:checked::after {
+.bulk-checkbox:checked::before {
   content: "✓" !important;
   color: #ffffff !important;
   font-size: 18px !important;
