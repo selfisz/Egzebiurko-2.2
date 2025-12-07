@@ -9,6 +9,7 @@ const trackerModule = (() => {
     const STORE_NAME = 'tracker';
     let currentCaseTags = [];
     const PREDEFINED_TAGS = [];
+    const DEFAULT_DEADLINE_DAYS = 30;
     let kanbanSortables = [];
     let bulkMode = false;
     let dailyPlan = []; // Plan dnia: tablica zadań { id, date, text, done, caseId (opcjonalnie) }
@@ -396,6 +397,19 @@ const trackerModule = (() => {
 
     let isEditMode = false;
 
+    function updateDeadlineFromDate() {
+        const dateInput = document.getElementById('trDate');
+        const deadlineInput = document.getElementById('trDeadline');
+        if (!dateInput || !deadlineInput) return;
+        if (!dateInput.value) return;
+
+        const baseDate = new Date(dateInput.value);
+        if (Number.isNaN(baseDate.getTime())) return;
+
+        baseDate.setDate(baseDate.getDate() + DEFAULT_DEADLINE_DAYS);
+        deadlineInput.value = baseDate.toISOString().split('T')[0];
+    }
+
     function openCase(id, editMode = false) {
         currentCaseId = id;
         window.currentCaseId = id; // Make available globally for attachments
@@ -408,6 +422,14 @@ const trackerModule = (() => {
         document.getElementById('trUnp').value = caseData.unp || '';
         document.getElementById('trDebtor').value = caseData.debtor || '';
         document.getElementById('trDate').value = caseData.date || '';
+        const deadlineInput = document.getElementById('trDeadline');
+        if (deadlineInput) {
+            deadlineInput.value = caseData.deadline || '';
+            // Jeśli brak zapisanego terminu, policz automatycznie z daty
+            if (!deadlineInput.value && caseData.date) {
+                updateDeadlineFromDate();
+            }
+        }
         document.getElementById('trStatus').value = caseData.status || 'new';
         document.getElementById('trUrgent').checked = caseData.urgent || false;
         const priorityEl = document.getElementById('trPriority');
@@ -431,7 +453,7 @@ const trackerModule = (() => {
     }
 
     function setViewMode(editMode) {
-        const fields = ['trNo', 'trUnp', 'trDebtor', 'trDate', 'trStatus', 'trPriority', 'trUrgent', 'trNote'];
+        const fields = ['trNo', 'trUnp', 'trDebtor', 'trDate', 'trDeadline', 'trStatus', 'trPriority', 'trUrgent', 'trNote'];
         const saveBtn = document.getElementById('save-case-btn');
         const editBtn = document.getElementById('edit-case-btn');
         const tagInput = document.getElementById('trTagInput');
@@ -724,6 +746,17 @@ const trackerModule = (() => {
             return;
         }
 
+        // Walidacja: termin nie może być wcześniejszy niż data wpływu
+        if (caseData.deadline) {
+            const baseDate = new Date(caseData.date);
+            const deadlineDate = new Date(caseData.deadline);
+            if (!Number.isNaN(baseDate.getTime()) && !Number.isNaN(deadlineDate.getTime()) && deadlineDate < baseDate) {
+                if (window.Toast) Toast.warning('Termin nie może być wcześniejszy niż data wpływu.');
+                else alert('Termin nie może być wcześniejszy niż data wpływu.');
+                return;
+            }
+        }
+
         if (currentCaseId) {
             const existingCase = cases.find(c => c.id === currentCaseId);
             caseData.createdAt = existingCase ? existingCase.createdAt : new Date().toISOString();
@@ -779,18 +812,8 @@ const trackerModule = (() => {
         document.getElementById('trDebtor').value = '';
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('trDate').value = today;
-        
-        // Auto-oblicz termin (data + 30 dni)
-        const deadline = new Date();
-        deadline.setDate(deadline.getDate() + 30);
-        document.getElementById('trDeadline').value = deadline.toISOString().split('T')[0];
-        
-        // Event listener: auto-aktualizuj termin przy zmianie daty
-        document.getElementById('trDate').onchange = function() {
-            const newDeadline = new Date(this.value);
-            newDeadline.setDate(newDeadline.getDate() + 30);
-            document.getElementById('trDeadline').value = newDeadline.toISOString().split('T')[0];
-        };
+        // Ustaw domyślny termin na dziś + DEFAULT_DEADLINE_DAYS
+        updateDeadlineFromDate();
         document.getElementById('trStatus').value = 'new';
         document.getElementById('trUrgent').checked = false;
         const priorityEl = document.getElementById('trPriority');
@@ -1370,10 +1393,13 @@ const trackerModule = (() => {
         const tagFilterEl = document.getElementById('trFilterTag');
         const remindersRangeEl = document.getElementById('trRemindersRange');
         const remindersFutureEl = document.getElementById('trRemindersFutureOnly');
+        const dateInput = document.getElementById('trDate');
         
         if (sortEl) sortEl.addEventListener('change', () => renderFullTracker());
         if (searchEl) searchEl.addEventListener('input', (e) => renderFullTracker(e.target.value));
         if (saveBtn) saveBtn.addEventListener('click', saveCase);
+        // Globalny listener: przy każdej zmianie daty automatycznie przelicz termin
+        if (dateInput) dateInput.addEventListener('change', updateDeadlineFromDate);
         const rerenderList = () => renderFullTracker(searchEl ? searchEl.value : '');
         if (statusFilterEl) statusFilterEl.addEventListener('change', rerenderList);
         if (priorityFilterEl) priorityFilterEl.addEventListener('change', rerenderList);
