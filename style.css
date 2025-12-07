@@ -497,8 +497,10 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 }
 
 /* W trybie operacji masowych pokaż checkboxy nawet jeśli mają klasę hidden */
-.tracker-bulk-mode .case-binder .case-checkbox {
+.tracker-bulk-mode .case-binder .case-checkbox.hidden {
   display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .case-binder .case-checkbox:not(.hidden):hover {
