@@ -59,6 +59,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
+    // Load store FIRST so legacy code can use it immediately
+    try {
+        const { default: store } = await import('../src/store/index.js');
+        window.store = store;
+        console.log('[Main] ✅ Store loaded and globally available');
+    } catch (error) {
+        console.error('[Main] ❌ Failed to load store:', error);
+    }
+    
     await initDB();
     
     handleRouteChange(); // Initial route handler
@@ -108,14 +117,20 @@ async function startApp() {
     setTimeout(() => loadModularArchitecture(), 1000);
 }
 
-// Function to load modular architecture after legacy code is ready
+// Function to load AppController after legacy code is ready
+// (Store is already loaded in startApp)
 async function loadModularArchitecture() {
     try {
-        console.log('[Main] Loading modular architecture...');
+        console.log('[Main] Loading AppController...');
         
-        // Create a temporary script element to load store
+        // Commit database to store if available
+        if (window.store && state.db) {
+            window.store.commit('SET_DB', state.db);
+            console.log('[Main] ✅ Database committed to store');
+        }
+        
+        // Load AppController using dynamic script injection
         const loadModule = async (modulePath) => {
-            console.log(`[Main] Attempting to load: ${modulePath}`);
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.type = 'module';
@@ -136,37 +151,16 @@ async function loadModularArchitecture() {
                         resolve(window.__tempModule);
                     }
                 };
-                script.onerror = (err) => {
-                    console.error(`[Main] Script error loading ${modulePath}:`, err);
-                    reject(err);
-                };
-                
+                script.onerror = reject;
                 document.head.appendChild(script);
-                
-                // Clean up after resolve/reject
                 setTimeout(() => {
                     try {
-                        if (document.head.contains(script)) {
-                            document.head.removeChild(script);
-                        }
+                        if (document.head.contains(script)) document.head.removeChild(script);
                         delete window.__tempModule;
-                    } catch (e) {
-                        console.warn('[Main] Cleanup error:', e);
-                    }
+                    } catch (e) {}
                 }, 200);
             });
         };
-        
-        // Load store first
-        const storeModule = await loadModule('../src/store/index.js');
-        window.store = storeModule.default || storeModule;
-        console.log('[Main] ✅ Store loaded successfully');
-        
-        // Commit database to store if available
-        if (window.store && state.db) {
-            window.store.commit('SET_DB', state.db);
-            console.log('[Main] ✅ Database committed to store');
-        }
         
         // Load AppController
         const appControllerModule = await loadModule('../src/core/AppController.js');
