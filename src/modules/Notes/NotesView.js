@@ -18,16 +18,16 @@ class NotesView {
     init() {
         console.log('[NotesView] Initializing...');
         
-        // Get DOM elements
+        // Get DOM elements - may not exist if module not loaded yet
         this.container = document.getElementById('notesList');
         this.searchInput = document.getElementById('notesSearch');
-        this.editor = {
-            title: document.getElementById('noteTitle'),
-            content: document.getElementById('noteContent'),
-            saveBtn: document.getElementById('saveNoteBtn'),
-            newBtn: document.getElementById('newNoteBtn'),
-            deleteBtn: document.getElementById('deleteNoteBtn')
-        };
+        this.editor = document.getElementById('notesEditor');
+        
+        // Only setup if container exists (module is loaded)
+        if (!this.container) {
+            console.log('[NotesView] Container not found - module not loaded yet');
+            return;
+        }
 
         // Setup event listeners
         this.setupEventListeners();
