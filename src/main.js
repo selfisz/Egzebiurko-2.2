@@ -148,8 +148,68 @@ function closeAllModals() {
  * Render notifications
  */
 function renderNotifications(notifications) {
-    // TODO: Implement notification UI
-    console.log('[App] Notifications:', notifications);
+    const container = document.getElementById('notifList');
+    if (!container) return;
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = `
+            <div class="p-4 text-center text-slate-400 text-sm">
+                <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                <p>Brak powiadomień</p>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+    }
+    
+    // Sort by timestamp (newest first)
+    const sorted = [...notifications].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+    );
+    
+    container.innerHTML = sorted.map(notif => {
+        const typeColors = {
+            success: 'bg-green-50 dark:bg-green-900/20 text-green-600',
+            error: 'bg-red-50 dark:bg-red-900/20 text-red-600',
+            warning: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600',
+            info: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'
+        };
+        
+        const typeIcons = {
+            success: 'check-circle',
+            error: 'alert-circle',
+            warning: 'alert-triangle',
+            info: 'info'
+        };
+        
+        const color = typeColors[notif.type] || typeColors.info;
+        const icon = typeIcons[notif.type] || typeIcons.info;
+        const time = new Date(notif.timestamp).toLocaleTimeString('pl-PL', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        return `
+            <div class="p-3 ${color} rounded-lg mb-2 relative group">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="${icon}" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium break-words">${notif.message}</p>
+                        <p class="text-xs opacity-70 mt-1">${time}</p>
+                    </div>
+                    <button 
+                        onclick="window.store?.commit('REMOVE_NOTIFICATION', ${notif.id})"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 rounded"
+                        title="Usuń"
+                    >
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    if (window.lucide) window.lucide.createIcons();
 }
 
 /**

@@ -14,10 +14,13 @@ import statisticsModule from '../modules/Statistics/index.js';
 import securityModule from '../modules/Security/index.js';
 import globalSearchModule from '../modules/GlobalSearch/index.js';
 import terrainModule from '../modules/Terrain/index.js';
-import trackerModule from '../modules/Tracker/index.js';
+import trackerModule from '../modules/tracker/index.js';
 
 // Import main store for cross-module functionality
 import store from '../store/index.js';
+
+// Import PerformanceMonitor
+import performanceMonitor from './PerformanceMonitor.js';
 
 class AppController {
     constructor() {
@@ -142,6 +145,9 @@ class AppController {
 
         this.isInitialized = true;
         this.logInitializationSummary();
+        
+        // Start automatic performance monitoring
+        performanceMonitor.startMonitoring();
     }
 
     /**
@@ -171,8 +177,14 @@ class AppController {
         try {
             console.log(`[AppController] Initializing ${moduleName}...`);
             
+            // Start performance tracking
+            performanceMonitor.startModuleLoad(moduleName);
+            
             // Initialize the module
             await module.init();
+            
+            // End performance tracking
+            performanceMonitor.endModuleLoad(moduleName);
             
             this.initializedModules.add(moduleName);
             console.log(`[AppController] ${moduleName} initialized successfully`);
@@ -181,6 +193,9 @@ class AppController {
         } catch (error) {
             console.error(`[AppController] Failed to initialize ${moduleName}:`, error);
             this.failedModules.add(moduleName);
+            
+            // Log error to performance monitor
+            performanceMonitor.logError(error, { module: moduleName });
             
             // Add notification about module failure
             store.commit('ADD_NOTIFICATION', {
@@ -273,6 +288,13 @@ class AppController {
             successCount: this.initializedModules.size,
             failureCount: this.failedModules.size
         };
+    }
+
+    /**
+     * Get performance report
+     */
+    getPerformanceReport() {
+        return performanceMonitor.getReport();
     }
 
     /**
