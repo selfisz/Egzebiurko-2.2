@@ -54,7 +54,7 @@ store.registerAction('enableSecurity', async ({ commit }, pin) => {
         localStorage.setItem('security_enabled', 'true');
         localStorage.setItem('security_pin', hashedPin);
         
-        commit('ADD_notification', {
+        commit('ADD_NOTIFICATION', {
             type: 'success',
             message: 'Ochrona PIN/hasłem została włączona'
         });
@@ -75,7 +75,7 @@ store.registerAction('disableSecurity', async ({ commit }) => {
         localStorage.removeItem('security_enabled');
         localStorage.removeItem('security_pin');
         
-        commit('ADD_notification', {
+        commit('ADD_NOTIFICATION', {
             type: 'success',
             message: 'Ochrona została wyłączona'
         });
@@ -173,9 +173,9 @@ store.registerAction('changePin', async ({ commit, state }, { oldPin, newPin }) 
 store.registerAction('checkSecurityStatus', async ({ commit }) => {
     try {
         const enabled = localStorage.getItem('security_enabled') === 'true';
-        const pin = localStorage.getItem && ('security_pin');
-        const attempts = parseInt(localStorage.getItem && ('security_attempts') || '0');
-        const lockoutEnd = parseInt(localStorage.getItem && ('security_lockout_end') || '0');
+        const pin = localStorage.getItem('security_pin') || null;
+        const attempts = parseInt(localStorage.getItem('security_attempts') || '0', 10);
+        const lockoutEnd = parseInt(localStorage.getItem('security_lockout_end') || '0', 10);
         
         commit('SET_SECURITY_ENABLED', enabled);
         commit('SET_SECURITY_PIN', pin);
@@ -188,7 +188,7 @@ store.registerAction('checkSecurityStatus', async ({ commit }) => {
         
         return {
             enabled,
-            locked: enabled && attempts >= MAX && 0 && Date.now() < lockoutEnd,
+            locked: enabled && attempts >= MAX_ATTEMPTS && Date.now() < lockoutEnd,
             attempts,
             lockoutEnd
         };
@@ -222,10 +222,10 @@ store.registerAction('unlockApp', async ({ commit, dispatch }, pin) => {
         // Hide lock screen
         const lockScreen = document.getElementById('securityLockScreen');
         if (lockScreen) {
-            lockScreen.classList.add && ('hidden');
+            lockScreen.classList.add('hidden');
         }
         
-        commit('ADD_notification', {
+        commit('ADD_NOTIFICATION', {
             type: 'success',
             message: 'Aplikacja odblokowana'
         });
@@ -236,7 +236,140 @@ store.registerAction('unlockApp', async ({ commit, dispatch }, pin) => {
     }
 });
 
-// Initialize security status
+// === Helper methods used by SecurityView ===
+
+function getDefaultSecuritySettings() {
+    return {
+        enabled: false,
+        passwordProtection: false,
+        autoLockTimer: 30,
+        encryptionEnabled: false,
+        accessControl: {}
+    };
+}
+
+// Load settings from localStorage into store
+async function loadSecuritySettings() {
+    try {
+        const raw = localStorage.getItem('security_settings');
+        const parsed = raw ? JSON.parse(raw) : null;
+        const settings = parsed || store.get('securitySettings') || getDefaultSecuritySettings();
+
+        store.commit('SET_SECURITY_SETTINGS', settings);
+        store.commit('SET_SECURITY_ENABLED', !!settings.enabled);
+
+        return settings;
+    } catch (error) {
+        console.error('[Security] loadSecuritySettings error:', error);
+        throw error;
+    }
+}
+
+// Save full settings object
+async function saveSecuritySettings(settings) {
+    const current = store.get('securitySettings') || getDefaultSecuritySettings();
+    const merged = { ...current, ...settings };
+
+    store.commit('SET_SECURITY_SETTINGS', merged);
+    store.commit('SET_SECURITY_ENABLED', !!merged.enabled);
+
+    localStorage.setItem('security_settings', JSON.stringify(merged));
+    localStorage.setItem('security_enabled', merged.enabled ? 'true' : 'false');
+
+    return merged;
+}
+
+// Update partial settings
+async function updateSecuritySettings(partialSettings) {
+    const current = store.get('securitySettings') || getDefaultSecuritySettings();
+    const merged = { ...current, ...partialSettings };
+    return saveSecuritySettings(merged);
+}
+
+// Users helpers
+async function loadUsers() {
+    try {
+        const raw = localStorage.getItem('security_users');
+        const users = raw ? JSON.parse(raw) : (store.get('users') || []);
+        store.commit('SET_USERS', users);
+        return users;
+    } catch (error) {
+        console.error('[Security] loadUsers error:', error);
+        throw error;
+    }
+}
+
+async function deleteUser(userId) {
+    const users = (store.get('users') || []).filter(u => u.id !== userId);
+    store.commit('SET_USERS', users);
+    localStorage.setItem('security_users', JSON.stringify(users));
+}
+
+// Audit log helpers
+async function loadAuditLog() {
+    try {
+        const raw = localStorage.getItem('security_audit_log');
+        const log = raw ? JSON.parse(raw) : (store.get('auditLog') || []);
+        store.commit('SET_AUDIT_LOG', log);
+        return log;
+    } catch (error) {
+        console.error('[Security] loadAuditLog error:', error);
+        throw error;
+    }
+}
+
+async function clearAuditLog() {
+    store.commit('SET_AUDIT_LOG', []);
+    localStorage.removeItem('security_audit_log');
+}
+
+async function exportAuditLog() {
+    const log = store.get('auditLog') || [];
+    const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `security_audit_log_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Encryption helpers (demo only, no real crypto)
+async function generateEncryptionKey() {
+    const key = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    localStorage.setItem('security_encryption_key', key);
+    store.commit('ADD_AUDIT_ENTRY', {
+        type: 'security',
+        action: 'Generated encryption key',
+        user: 'System'
+    });
+}
+
+async function backupEncryptionKey() {
+    const key = localStorage.getItem('security_encryption_key') || '';
+    const blob = new Blob([key], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'security_encryption_key.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+async function encryptSensitiveData() {
+    // Demo: just log audit entry; real implementation would encrypt IndexedDB
+    store.commit('ADD_AUDIT_ENTRY', {
+        type: 'security',
+        action: 'Encrypt sensitive data (demo)',
+        user: 'System'
+    });
+}
+
+// Initialize security status on app start
 store.dispatch('checkSecurityStatus');
 
 export default {
@@ -249,5 +382,17 @@ export default {
     unlock: (pin) => store.dispatch('unlockApp', pin),
     isEnabled: () => store.get('securityEnabled'),
     isLocked: () => store.get('securityLocked'),
-    getAttempts: () => store.get('securityAttempts')
+    getAttempts: () => store.get('securityAttempts'),
+    // New helpers used by SecurityView
+    loadSecuritySettings,
+    saveSecuritySettings,
+    updateSecuritySettings,
+    loadUsers,
+    deleteUser,
+    loadAuditLog,
+    clearAuditLog,
+    exportAuditLog,
+    generateEncryptionKey,
+    backupEncryptionKey,
+    encryptSensitiveData
 };

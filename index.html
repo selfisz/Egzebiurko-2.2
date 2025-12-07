@@ -511,10 +511,7 @@
     <script src="js/modules/statistics.js"></script>
     <script src="js/modules/security.js"></script>
 
-    <!-- Main App - ES6 Module for proper import support -->
-    <script type="module" src="js/main-module.js"></script>
-    
-    <!-- Legacy fallback for non-module browsers -->
-    <script nomodule src="js/main.js"></script>
+    <!-- Main App - legacy entry that integrates AppController via dynamic import -->
+    <script src="js/main.js"></script>
 </body>
 </html>

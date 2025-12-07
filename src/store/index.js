@@ -154,8 +154,16 @@ const store = new Store({
   
   // User State
   user: null,
+  users: [],
   isAuthenticated: false,
   securityEnabled: false,
+  securitySettings: {
+    enabled: false,
+    passwordProtection: false,
+    autoLockTimer: 30,
+    encryptionEnabled: false,
+    accessControl: {}
+  },
   
   // Data State
   cases: [],
@@ -164,6 +172,7 @@ const store = new Store({
   links: [],
   terrainCases: [],
   bailiffs: [],
+  auditLog: [],
   
   // App State
   loading: false,
@@ -234,6 +243,32 @@ store.registerMutation('ADD_NOTIFICATION', (state, notification) => {
 
 store.registerMutation('REMOVE_NOTIFICATION', (state, id) => {
   state.notifications = state.notifications.filter(n => n.id !== id);
+});
+
+// === SECURITY MUTATIONS ===
+
+store.registerMutation('SET_SECURITY_SETTINGS', (state, settings) => {
+  state.securitySettings = {
+    ...(state.securitySettings || {}),
+    ...settings
+  };
+});
+
+store.registerMutation('SET_USERS', (state, users) => {
+  state.users = Array.isArray(users) ? users : [];
+});
+
+store.registerMutation('SET_AUDIT_LOG', (state, log) => {
+  state.auditLog = Array.isArray(log) ? log : [];
+});
+
+store.registerMutation('ADD_AUDIT_ENTRY', (state, entry) => {
+  if (!Array.isArray(state.auditLog)) state.auditLog = [];
+  state.auditLog.unshift({
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    ...entry
+  });
 });
 
 // === ACTIONS ===
