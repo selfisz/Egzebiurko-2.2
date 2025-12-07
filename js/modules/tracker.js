@@ -498,6 +498,14 @@ const trackerModule = (() => {
         if (!bulkMode) {
             bulkMode = true;
             document.body.classList.add('tracker-bulk-mode');
+
+            // Przy wejściu w tryb masowy zacznij od pustych checkboxów
+            const checkboxes = document.querySelectorAll('.case-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            selectedCases.clear();
+            updateBulkActionsBar();
         }
 
         // Przełącz widoczność menu z opcjami

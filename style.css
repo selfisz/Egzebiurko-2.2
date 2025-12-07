@@ -485,7 +485,7 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
 .case-binder .case-checkbox {
   appearance: none;
   -webkit-appearance: none;
-  width: 24px;
+  width: 32px;
   height: 24px;
   border-radius: 6px;
   border: 2px solid #e2e8f0;
