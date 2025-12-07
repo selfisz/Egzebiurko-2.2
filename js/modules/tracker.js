@@ -475,36 +475,53 @@ const trackerModule = (() => {
         
         // Dodaj checkboxy do każdej sprawy
         const caseBinders = document.querySelectorAll('.case-binder');
-        caseBinders.forEach(binder => {
+        console.log('Znaleziono caseBinders:', caseBinders.length);
+        
+        caseBinders.forEach((binder, index) => {
+            console.log(`Binder ${index}:`, binder.outerHTML.substring(0, 100));
             const caseId = binder.dataset.caseId;
+            console.log(`CaseId dla bindera ${index}:`, caseId);
+            
+            if (!caseId) {
+                console.error('Brak data-case-id dla bindera:', binder);
+                return;
+            }
+            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.className = 'bulk-checkbox';
             checkbox.dataset.caseId = caseId;
             checkbox.style.cssText = `
-                width: 40px;
-                height: 24px;
-                border-radius: 9999px;
-                border: 2px solid #6366f1;
-                background-color: transparent;
-                margin-right: 12px;
-                cursor: pointer;
-                appearance: none;
-                -webkit-appearance: none;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
+                width: 40px !important;
+                height: 24px !important;
+                border-radius: 9999px !important;
+                border: 2px solid #6366f1 !important;
+                background-color: transparent !important;
+                margin-right: 12px !important;
+                cursor: pointer !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             `;
             checkbox.onclick = (e) => {
                 e.stopPropagation();
                 toggleCaseSelection(parseInt(caseId));
             };
+            
+            console.log(`Tworzę checkbox dla caseId: ${caseId}`);
             binder.insertBefore(checkbox, binder.firstChild);
+            console.log(`Checkbox dodany do bindera ${index}`);
         });
         
         // Pokaż menu
         const menu = document.getElementById('bulk-select-menu');
-        if (menu) menu.classList.remove('hidden');
+        console.log('Menu bulk-select-menu:', menu);
+        if (menu) {
+            menu.classList.remove('hidden');
+            console.log('Menu pokazane');
+        }
         updateBulkActionsBar();
     }
 
