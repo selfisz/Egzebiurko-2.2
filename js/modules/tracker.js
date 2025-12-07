@@ -1412,7 +1412,48 @@ const trackerModule = (() => {
 
         renderRemindersList();
         
+        setupTrackerCollapsiblePanels();
         showArchived(false);
+    }
+
+    function setupTrackerCollapsiblePanels() {
+        document.querySelectorAll('#tracker-view .collapsible-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const chevron = header.querySelector('.chevron-icon');
+                
+                if (!content || !chevron) return;
+                
+                content.classList.toggle('hidden');
+                chevron.classList.toggle('rotate-180');
+                
+                // Save state to localStorage
+                const panel = header.closest('.glass-panel');
+                if (panel) {
+                    const panelId = panel.querySelector('h3').textContent.trim();
+                    const collapsedState = JSON.parse(localStorage.getItem('trackerCollapsedPanels') || '{}');
+                    collapsedState[panelId] = content.classList.contains('hidden');
+                    localStorage.setItem('trackerCollapsedPanels', JSON.stringify(collapsedState));
+                }
+            });
+        });
+        
+        // Restore collapsed state from localStorage
+        const collapsedState = JSON.parse(localStorage.getItem('trackerCollapsedPanels') || '{}');
+        document.querySelectorAll('#tracker-view .glass-panel').forEach(panel => {
+            const header = panel.querySelector('.collapsible-header');
+            if (!header) return;
+            
+            const panelId = header.querySelector('h3').textContent.trim();
+            if (collapsedState[panelId]) {
+                const content = panel.querySelector('.collapsible-content');
+                const chevron = panel.querySelector('.chevron-icon');
+                if (content && chevron) {
+                    content.classList.add('hidden');
+                    chevron.classList.add('rotate-180');
+                }
+            }
+        });
     }
 
     // Public API

@@ -720,68 +720,82 @@ window.APP_VIEWS = {
             </div>
             <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-4 text-xs text-center"></div>
         </div>
-        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
-            <h3 class="flex items-center gap-2 mb-4 text-sm font-bold uppercase"><i data-lucide="filter"></i> Filtruj i Sortuj</h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sortuj po</label>
-                    <select id="trSort" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="deadline">Termin</option>
-                        <option value="added">Data dodania</option>
-                        <option value="priority">Priorytet</option>
-                        <option value="no">Sygnatura</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
-                    <select id="trFilterStatus" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie</option>
-                        <option value="new">Nowa</option>
-                        <option value="in-progress">W toku</option>
-                        <option value="finished">Zakończona</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
-                    <select id="trFilterPriority" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie</option>
-                        <option value="low">Niski</option>
-                        <option value="medium">Normalny</option>
-                        <option value="high">Wysoki</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                        <input type="checkbox" id="trFilterUrgent" class="w-4 h-4 text-red-600 rounded">
-                        <span>Tylko pilne</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                        <input type="checkbox" id="trFilterFavorite" class="w-4 h-4 text-yellow-500 rounded">
-                        <span>Tylko ulubione</span>
-                    </label>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tag</label>
-                    <select id="trFilterTag" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                        <option value="all">Wszystkie tagi</option>
-                    </select>
+        <div class="glass-panel rounded-2xl shadow-sm h-fit">
+            <div class="collapsible-header cursor-pointer flex items-center justify-between p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                <h3 class="flex items-center gap-2 text-sm font-bold uppercase"><i data-lucide="filter"></i> Filtruj i Sortuj</h3>
+                <i data-lucide="chevron-down" class="chevron-icon transition-transform"></i>
+            </div>
+            <div class="collapsible-content">
+                <div class="p-6 pt-0">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sortuj po</label>
+                            <select id="trSort" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                                <option value="deadline">Termin</option>
+                                <option value="added">Data dodania</option>
+                                <option value="priority">Priorytet</option>
+                                <option value="no">Sygnatura</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                            <select id="trFilterStatus" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                                <option value="all">Wszystkie</option>
+                                <option value="new">Nowa</option>
+                                <option value="in-progress">W toku</option>
+                                <option value="finished">Zakończona</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Priorytet</label>
+                            <select id="trFilterPriority" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                                <option value="all">Wszystkie</option>
+                                <option value="low">Niski</option>
+                                <option value="medium">Normalny</option>
+                                <option value="high">Wysoki</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                <input type="checkbox" id="trFilterUrgent" class="w-4 h-4 text-red-600 rounded">
+                                <span>Tylko pilne</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                <input type="checkbox" id="trFilterFavorite" class="w-4 h-4 text-yellow-500 rounded">
+                                <span>Tylko ulubione</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tag</label>
+                            <select id="trFilterTag" class="w-full p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                                <option value="all">Wszystkie tagi</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="p-6 glass-panel rounded-2xl shadow-sm h-fit">
-            <h3 class="flex items-center gap-2 mb-4 text-sm font-bold uppercase"><i data-lucide="bell"></i> Przypomnienia</h3>
-            <div class="flex items-center gap-2 mb-3">
-                <select id="trRemindersRange" class="flex-1 p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
-                    <option value="7">7 dni</option>
-                    <option value="30">30 dni</option>
-                    <option value="all">Wszystkie</option>
-                </select>
-                <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                    <input type="checkbox" id="trRemindersFutureOnly" class="w-4 h-4 text-indigo-600 rounded" checked>
-                    <span>Tylko przyszłe</span>
-                </label>
+        <div class="glass-panel rounded-2xl shadow-sm h-fit">
+            <div class="collapsible-header cursor-pointer flex items-center justify-between p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                <h3 class="flex items-center gap-2 text-sm font-bold uppercase"><i data-lucide="bell"></i> Przypomnienia</h3>
+                <i data-lucide="chevron-down" class="chevron-icon transition-transform"></i>
             </div>
-            <div id="tracker-reminders-list" class="space-y-2 max-h-64 overflow-y-auto custom-scroll text-xs"></div>
+            <div class="collapsible-content">
+                <div class="p-6 pt-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <select id="trRemindersRange" class="flex-1 p-2 text-xs border rounded-lg dark:bg-slate-700 dark:text-white">
+                            <option value="7">7 dni</option>
+                            <option value="30">30 dni</option>
+                            <option value="all">Wszystkie</option>
+                        </select>
+                        <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                            <input type="checkbox" id="trRemindersFutureOnly" class="w-4 h-4 text-indigo-600 rounded" checked>
+                            <span>Tylko przyszłe</span>
+                        </label>
+                    </div>
+                    <div id="tracker-reminders-list" class="space-y-2 max-h-64 overflow-y-auto custom-scroll text-xs"></div>
+                </div>
+            </div>
         </div>
     </div>
     </div>
