@@ -155,6 +155,42 @@ async function renderDashboardWidgets() {
     try {
         const db = await idb.openDB(CONFIG.DB_NAME, CONFIG.DB_VERSION);
         const cases = await db.getAll('tracker');
+        
+        // === WIDGET STATYSTYK ===
+        let statisticsWidget = '';
+        if (typeof statisticsModule !== 'undefined') {
+            const stats = await statisticsModule.generate();
+            statisticsWidget = `
+                <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                            <i data-lucide="bar-chart-3"></i> Statystyki
+                        </h3>
+                        <button onclick="goToModule('statistics')" class="text-xs text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-1">
+                            Zobacz więcej <i data-lucide="arrow-right" size="14"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${stats.cases.total}</div>
+                            <div class="text-xs text-slate-600 dark:text-slate-400">Spraw</div>
+                        </div>
+                        <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600 dark:text-red-400">${stats.cases.overdue}</div>
+                            <div class="text-xs text-slate-600 dark:text-slate-400">Przeterminowane</div>
+                        </div>
+                        <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">${stats.cars.total}</div>
+                            <div class="text-xs text-slate-600 dark:text-slate-400">Pojazdów</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">${stats.terrain.total}</div>
+                            <div class="text-xs text-slate-600 dark:text-slate-400">Teczek</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         // --- PILNE SPRAWY --- (wszystkie sprawy oznaczone jako pilne, bez ograniczenia 7 dni)
         const urgentCases = cases.filter(c => !c.archived && c.urgent);
@@ -306,7 +342,7 @@ async function renderDashboardWidgets() {
             console.error('Dashboard notifications error:', e);
         }
 
-        container.innerHTML = urgentCasesWidget + favoritesWidget + notificationsWidget;
+        container.innerHTML = statisticsWidget + urgentCasesWidget + favoritesWidget + notificationsWidget;
         lucide.createIcons();
     } catch (error) {
         console.error('Dashboard widgets error:', error);

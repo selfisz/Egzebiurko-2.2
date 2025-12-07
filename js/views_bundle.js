@@ -1104,4 +1104,18 @@ window.APP_VIEWS = {
         </div>
     </div>
 </div>`,
+    'statistics': `<div id="view-statistics" class="max-w-7xl mx-auto h-full overflow-y-auto custom-scroll p-8">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Statystyki i Raporty</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-2">Przegląd aktywności i analiza danych</p>
+    </div>
+    
+    <div id="statistics-dashboard">
+        <!-- Statystyki będą renderowane przez statistics.js -->
+        <div class="text-center py-20">
+            <i data-lucide="loader" class="w-12 h-12 mx-auto mb-4 text-slate-400 animate-spin"></i>
+            <p class="text-slate-500">Ładowanie statystyk...</p>
+        </div>
+    </div>
+</div>`,
 };

@@ -87,6 +87,17 @@ async function startApp() {
     if (typeof initBackupReminder === 'function') {
         initBackupReminder();
     }
+    
+    // ===== NOWE MODUŁY =====
+    // Inicjalizuj moduł szybkich akcji
+    if (typeof quickActionsModule !== 'undefined') {
+        quickActionsModule.init();
+    }
+    
+    // Inicjalizuj moduł bezpieczeństwa (jeśli włączony)
+    if (typeof securityModule !== 'undefined' && localStorage.getItem('security_enabled') === 'true') {
+        securityModule.init();
+    }
 }
 
 // --- KEYBOARD SHORTCUTS ---
