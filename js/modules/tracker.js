@@ -1413,19 +1413,31 @@ const trackerModule = (() => {
         renderRemindersList();
         
         setupTrackerCollapsiblePanels();
+        
+        // Ensure lucide icons are created after setting up collapsible panels
+        if (window.lucide) lucide.createIcons();
+        
         showArchived(false);
     }
 
     function setupTrackerCollapsiblePanels() {
-        document.querySelectorAll('#tracker-view .collapsible-header').forEach(header => {
+        console.log('Setting up collapsible panels, found:', document.querySelectorAll('.collapsible-header').length);
+        document.querySelectorAll('.collapsible-header').forEach(header => {
             header.addEventListener('click', () => {
+                console.log('Collapsible header clicked');
                 const content = header.nextElementSibling;
                 const chevron = header.querySelector('.chevron-icon');
                 
-                if (!content || !chevron) return;
+                console.log('Content:', content, 'Chevron:', chevron);
+                
+                if (!content || !chevron) {
+                    console.log('Missing content or chevron');
+                    return;
+                }
                 
                 content.classList.toggle('hidden');
                 chevron.classList.toggle('rotate-180');
+                console.log('Toggled classes - content hidden:', content.classList.contains('hidden'), 'chevron rotated:', chevron.classList.contains('rotate-180'));
                 
                 // Save state to localStorage
                 const panel = header.closest('.glass-panel');
