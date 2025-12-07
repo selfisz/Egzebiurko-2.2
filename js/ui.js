@@ -18,7 +18,7 @@ async function renderDashboardStats() {
         }
         
         const db = state.db;
-        const cases = await db.getAll('tracker');
+        const cases = db.objectStoreNames.contains('tracker') ? await db.getAll('tracker') : [];
         const cars = db.objectStoreNames.contains('garage') ? await db.getAll('garage') : [];
         const notes = db.objectStoreNames.contains('notes') ? await db.getAll('notes') : [];
         
@@ -166,7 +166,7 @@ async function renderDashboardWidgets() {
         }
         
         const db = state.db;
-        const cases = await db.getAll('tracker');
+        const cases = db.objectStoreNames.contains('tracker') ? await db.getAll('tracker') : [];
         
         // === WIDGET STATYSTYK ===
         let statisticsWidget = '';
