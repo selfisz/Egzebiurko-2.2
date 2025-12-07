@@ -56,6 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
+    // Make store globally available for legacy scripts (like db.js)
+    const { default: store } = await import('../src/store/index.js');
+    window.store = store;
+    
     await initDB();
     
     // Initialize modular architecture with AppController
