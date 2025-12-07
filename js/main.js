@@ -1,7 +1,9 @@
 // --- ENVIRONMENT DETECTION ---
-// Treat localhost/127.0.0.1 as dev (where /src/* is available via Vite),
-// and everything else (e.g. Vercel) as production where only built assets exist.
-const IS_DEV_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+// Treat only specific localhost ports as DEV (where /src/* is available via Vite),
+// everything else (including Vite preview on 4173 and Vercel) = PROD (no /src/* imports).
+const DEV_PORTS = ['3000', '8080'];
+const IS_DEV_ENV = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    && DEV_PORTS.includes(window.location.port);
 
 // --- ROUTING ---
 window.addEventListener('hashchange', handleRouteChange);
@@ -64,9 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
-    // In dev (localhost) load modular store from /src so refactoring działa w pełni.
-    // W produkcji (np. Vercel) pomijamy to, bo /src/* nie jest dostępne po buildzie.
-    if (IS_DEV_HOST) {
+    // In DEV (localhost:3000/8080) load modular store from /src so refactoring działa w pełni.
+    // W PREVIEW/PROD (inne porty/hosty) pomijamy to, bo /src/* nie jest dostępne po buildzie.
+    if (IS_DEV_ENV) {
         try {
             const { default: store } = await import('../src/store/index.js');
             window.store = store;
@@ -75,7 +77,7 @@ async function startApp() {
             console.error('[Main] ❌ Failed to load store in DEV mode:', error);
         }
     } else {
-        console.log('[Main] Skipping modular store load on production host (legacy store not used tutaj).');
+        console.log('[Main] Skipping modular store load (non-DEV env, legacy only).');
     }
 
     await initDB();
@@ -123,11 +125,11 @@ async function startApp() {
     }
     
     // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION (DEV ONLY)
-    if (IS_DEV_HOST) {
+    if (IS_DEV_ENV) {
         console.log('[Main] Starting modular architecture load (DEV)...');
         setTimeout(() => loadModularArchitecture(), 1000);
     } else {
-        console.log('[Main] Skipping AppController load on production host (legacy only).');
+        console.log('[Main] Skipping AppController load (non-DEV env, legacy only).');
     }
 }
 
@@ -135,7 +137,7 @@ async function startApp() {
 // (Store is already loaded in startApp in DEV)
 async function loadModularArchitecture() {
     try {
-        if (!IS_DEV_HOST) {
+        if (!IS_DEV_ENV) {
             console.log('[Main] loadModularArchitecture() called on production host - skipping.');
             return;
         }

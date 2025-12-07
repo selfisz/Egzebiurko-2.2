@@ -357,6 +357,14 @@ async function renderDashboardWidgets() {
         container.innerHTML = statisticsWidget + urgentCasesWidget + favoritesWidget + notificationsWidget;
         lucide.createIcons();
     } catch (error) {
+        if (error && error.name === 'NotFoundError') {
+            // Brak oczekiwanych object stores w IndexedDB (np. stara wersja bazy) –
+            // pomijamy widgety zamiast rzucać czerwony error w konsoli.
+            console.warn('Dashboard widgets skipped - missing object store in IndexedDB:', error.message);
+            container.innerHTML = '';
+            return;
+        }
+
         console.error('Dashboard widgets error:', error);
         container.innerHTML = '<div class="glass-panel p-6 rounded-2xl shadow-sm text-center text-red-400">Błąd ładowania widgetów.</div>';
     }
