@@ -12,6 +12,9 @@ function handleRouteChange() {
     if (typeof renderDashboardWidgets === 'function') renderDashboardWidgets();
 }
 
+// Export to global scope for HTML onclick handlers
+window.handleRouteChange = handleRouteChange;
+
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -56,30 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
-    // Make store globally available FIRST (before initDB needs it)
-    try {
-        const { default: store } = await import('../src/store/index.js');
-        window.store = store;
-        console.log('[Main] Store loaded and available globally');
-    } catch (error) {
-        console.error('[Main] Failed to load store:', error);
-    }
-    
     await initDB();
-    
-    // Initialize modular architecture with AppController
-    try {
-        const { default: appController } = await import('../src/core/AppController.js');
-        await appController.initialize();
-        console.log('[Main] Modular architecture initialized successfully');
-        
-        // Make appController globally available for debugging
-        window.appController = appController;
-    } catch (error) {
-        console.error('[Main] Failed to initialize modular architecture:', error);
-        console.error('Error details:', error.stack);
-        // Continue with legacy initialization even if AppController fails
-    }
     
     handleRouteChange(); // Initial route handler
     lucide.createIcons();
@@ -121,6 +101,61 @@ async function startApp() {
     // Inicjalizuj moduł bezpieczeństwa (jeśli włączony)
     if (typeof securityModule !== 'undefined' && localStorage.getItem('security_enabled') === 'true') {
         securityModule.init();
+    }
+    
+    // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION
+    // Use script injection to bypass ES6 module restrictions
+    setTimeout(() => loadModularArchitecture(), 1000);
+}
+
+// Function to load modular architecture after legacy code is ready
+async function loadModularArchitecture() {
+    try {
+        // Create a temporary script element to load store
+        const loadModule = async (modulePath) => {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.textContent = `
+                    import module from '${modulePath}';
+                    window.__tempModule = module;
+                `;
+                script.onload = () => resolve(window.__tempModule);
+                script.onerror = reject;
+                document.head.appendChild(script);
+                // Clean up
+                setTimeout(() => {
+                    document.head.removeChild(script);
+                    delete window.__tempModule;
+                }, 100);
+            });
+        };
+        
+        // Load store first
+        console.log('[Main] Loading modular architecture...');
+        const storeModule = await loadModule('../src/store/index.js');
+        window.store = storeModule.default || storeModule;
+        console.log('[Main] Store loaded');
+        
+        // Commit database to store if available
+        if (window.store && state.db) {
+            window.store.commit('SET_DB', state.db);
+            console.log('[Main] Database committed to store');
+        }
+        
+        // Load AppController
+        const appControllerModule = await loadModule('../src/core/AppController.js');
+        window.appController = appControllerModule.default || appControllerModule;
+        console.log('[Main] AppController loaded');
+        
+        // Initialize
+        await window.appController.initialize();
+        console.log('[Main] Modular architecture initialized successfully');
+        
+    } catch (error) {
+        console.error('[Main] Failed to load modular architecture:', error);
+        console.error('Error details:', error.stack);
+        console.log('[Main] Continuing with legacy code only');
     }
 }
 
