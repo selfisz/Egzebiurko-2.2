@@ -5,7 +5,21 @@
 
 import store from './store/index.js';
 import db from './utils/db.js';
+
+// Import all migrated modules
 import quickActionsModule from './modules/quickActions/index.js';
+import notesModule from './modules/Notes/index.js';
+import linksModule from './modules/Links/index.js';
+import registryModule from './modules/Registry/index.js';
+import financeModule from './modules/Finance/index.js';
+import carsModule from './modules/Cars/index.js';
+import generatorModule from './modules/Generator/index.js';
+import aiModule from './modules/AI/index.js';
+import statisticsModule from './modules/Statistics/index.js';
+import securityModule from './modules/Security/index.js';
+import globalSearchModule from './modules/GlobalSearch/index.js';
+import terrainModule from './modules/Terrain/index.js';
+import trackerModule from './modules/tracker/index.js';
 
 console.log('[App] Starting Egzebiurko 3.0...');
 
@@ -20,11 +34,31 @@ async function initApp() {
         
         // 2. Załaduj dane do store
         console.log('[App] Loading initial data...');
-        await store.dispatch('loadCases');
+        await Promise.all([
+            store.dispatch('loadCases'),
+            notesModule.load(),
+            linksModule.load(),
+            registryModule.load(),
+            carsModule.load(),
+            terrainModule.load(),
+            trackerModule.load()
+        ]);
         
         // 3. Inicjalizuj moduły
         console.log('[App] Initializing modules...');
         quickActionsModule.init();
+        notesModule.init();
+        linksModule.init();
+        registryModule.init();
+        financeModule.init();
+        carsModule.init();
+        generatorModule.init();
+        aiModule.init();
+        statisticsModule.init();
+        securityModule.init();
+        globalSearchModule.init();
+        terrainModule.init();
+        trackerModule.init();
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');
