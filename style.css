@@ -490,18 +490,16 @@ body.widget-mode #view-links { display: block !important; padding: 0; }
   border-radius: 6px;
   border: 2px solid #e2e8f0;
   background-color: #ffffff;
-  display: inline-flex;
+  display: none; /* domyślnie ukryte */
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease-in-out;
   cursor: pointer;
 }
 
-/* W trybie operacji masowych pokaż checkboxy nawet jeśli mają klasę hidden */
-.tracker-bulk-mode .case-binder .case-checkbox.hidden {
+/* W trybie operacji masowych pokaż checkboxy */
+.tracker-bulk-mode .case-binder .case-checkbox {
   display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 .case-binder .case-checkbox:not(.hidden):hover {
