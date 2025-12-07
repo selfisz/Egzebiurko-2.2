@@ -82,7 +82,7 @@ const trackerModule = (() => {
         if (caseData.isFavorite) folderClasses += ' favorite';
 
         return `
-            <div class="${folderClasses} flex items-center py-3 pl-3 pr-6 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
+            <div class="${folderClasses} flex items-center py-3 pl-3 pr-5 rounded-xl border ${urgentStyle} cursor-pointer" data-case-no="${caseData.no}" data-case-id="${caseData.id}" data-status="${caseData.status || 'new'}">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3">
                         <div class="font-bold text-slate-800 dark:text-white truncate">${caseData.no}</div>
@@ -91,10 +91,10 @@ const trackerModule = (() => {
                     <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
                     ${tagsHTML}
                 </div>
-                <div class="flex items-center gap-1 text-xs text-right ml-4 justify-end">
-                    <div class="w-32">
-                        <div class="font-bold text-slate-600 dark:text-slate-300">📅 ${new Date(caseData.date).toLocaleDateString()}</div>
-                        <div class="text-[10px] font-bold ${deadlineColor}">⏰ ${deadlineText}</div>
+                <div class="flex items-center gap-2 text-xs text-right ml-2 justify-end">
+                    <div class="w-28">
+                        <div class="font-bold text-slate-600 dark:text-slate-300">${new Date(caseData.date).toLocaleDateString()}</div>
+                        <div class="text-[10px] font-bold ${deadlineColor}">${deadlineText}</div>
                         ${caseData.deadline ? `<div class="text-[9px] text-slate-500">Termin: ${new Date(caseData.deadline).toLocaleDateString()}</div>` : ''}
                     </div>
                     <div class="tracker-status-badge w-20 text-xs font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600">${statusLabels[caseData.status] || 'Nowa'}</div>
