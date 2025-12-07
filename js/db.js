@@ -41,8 +41,13 @@ async function initDB() {
         }
     });
     
-    // TODO: Store integration will be added when AppController is properly loaded
-    console.log('[DB] Database initialized');
+    // Commit to main store for AppController modules (store available via window.store)
+    if (window.store && window.store.commit) {
+        window.store.commit('SET_DB', state.db);
+        console.log('[DB] Database committed to main store');
+    } else {
+        console.log('[DB] Database initialized (store not yet available)');
+    }
 }
 
 // Data Management

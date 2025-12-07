@@ -56,27 +56,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
-    await initDB();
-    
-    // TODO: AppController integration temporarily disabled
-    // Dynamic imports don't work in regular script tags
-    // Need to either:
-    // 1. Convert main.js to ES6 module (type="module" in HTML)
-    // 2. Use bundler to compile imports
-    // 3. Load AppController differently
-    /*
+    // Make store globally available FIRST (before initDB needs it)
     try {
         const { default: store } = await import('../src/store/index.js');
         window.store = store;
-        
+        console.log('[Main] Store loaded and available globally');
+    } catch (error) {
+        console.error('[Main] Failed to load store:', error);
+    }
+    
+    await initDB();
+    
+    // Initialize modular architecture with AppController
+    try {
         const { default: appController } = await import('../src/core/AppController.js');
         await appController.initialize();
         console.log('[Main] Modular architecture initialized successfully');
+        
+        // Make appController globally available for debugging
         window.appController = appController;
     } catch (error) {
         console.error('[Main] Failed to initialize modular architecture:', error);
+        console.error('Error details:', error.stack);
+        // Continue with legacy initialization even if AppController fails
     }
-    */
     
     handleRouteChange(); // Initial route handler
     lucide.createIcons();
