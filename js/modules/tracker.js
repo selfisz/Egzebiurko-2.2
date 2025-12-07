@@ -494,14 +494,20 @@ const trackerModule = (() => {
     function toggleBulkMenu() {
         const menu = document.getElementById('bulk-select-menu');
 
-        // Włączenie trybu masowego: sterujemy widocznością checkboxów przez klasę na body
+        // Włączenie trybu masowego: pokaż checkboxy przez inline styles
         if (!bulkMode) {
             bulkMode = true;
             document.body.classList.add('tracker-bulk-mode');
 
-            // Przy wejściu w tryb masowy zacznij od pustych checkboxów
+            // Pokaż checkboxy i ustaw puste
             const checkboxes = document.querySelectorAll('.case-checkbox');
             checkboxes.forEach(cb => {
+                cb.style.display = 'inline-flex';
+                cb.style.width = '40px';
+                cb.style.height = '24px';
+                cb.style.borderRadius = '9999px';
+                cb.style.border = '2px solid #6366f1';
+                cb.style.backgroundColor = 'transparent';
                 cb.checked = false;
             });
             selectedCases.clear();
@@ -522,8 +528,9 @@ const trackerModule = (() => {
         // Ukryj menu operacji masowych
         if (menu) menu.classList.add('hidden');
 
-        // Wyczyść zaznaczenia, ale nie manipuluj klasą hidden – to robi CSS przez tracker-bulk-mode
+        // Ukryj checkboxy i wyczyść zaznaczenia
         checkboxes.forEach(cb => {
+            cb.style.display = 'none';
             cb.checked = false;
         });
 
