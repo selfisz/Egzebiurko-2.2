@@ -16,7 +16,6 @@ class AIView {
         this.saveKeyBtn = null;
         this.processBtn = null;
         this.processTextarea = null;
-        this.init();
     }
 
     /**

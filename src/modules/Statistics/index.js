@@ -1,18 +1,13 @@
 /**
- * Statistics Module - Data Analysis and Reporting
+ * Statistics Module - Entry Point
  */
 
 import StatisticsStore from './StatisticsStore.js';
-
-/**
- * Initialize Statistics module
- */
-function init() {
-    console.log('[Statistics] Module initialized');
-}
+import statisticsView from './StatisticsView.js';
 
 export default {
-    init,
-    store: StatisticsStore,
-    ...StatisticsStore
+    init: () => statisticsView.init(),
+    destroy: () => statisticsView.destroy?.(),
+    view: statisticsView,
+    store: StatisticsStore
 };

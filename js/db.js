@@ -40,6 +40,12 @@ async function initDB() {
             }
         }
     });
+    
+    // Also commit to main store for AppController modules
+    if (typeof store !== 'undefined' && store.commit) {
+        store.commit('SET_DB', state.db);
+        console.log('[DB] Database committed to main store');
+    }
 }
 
 // Data Management

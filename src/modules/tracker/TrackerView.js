@@ -13,7 +13,6 @@ class TrackerView {
         this.history = null;
         this.stats = null;
         this.activeTab = 'tracking';
-        this.init();
     }
 
     /**

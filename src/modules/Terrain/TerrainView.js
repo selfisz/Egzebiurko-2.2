@@ -11,7 +11,6 @@ class TerrainView {
         this.map = null;
         this.scanner = null;
         this.results = null;
-        this.init();
     }
 
     /**

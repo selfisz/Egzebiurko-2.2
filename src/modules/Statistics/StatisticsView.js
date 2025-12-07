@@ -18,7 +18,6 @@ class StatisticsView {
         this.activeTab = 'overview';
         this.dateRange = null;
         this.exportBtn = null;
-        this.init();
     }
 
     /**

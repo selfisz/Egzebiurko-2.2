@@ -8,11 +8,11 @@ import LinksStore from './LinksStore.js';
 class LinksView {
     constructor() {
         this.container = null;
-        this.searchInput = null;
-        this.categoryFilter = null;
-        this.editor = null;
+        this.linksList = null;
         this.modal = null;
-        this.init();
+        this.categoryFilter = null;
+        this.searchInput = null;
+        this.activeLinkId = null;
     }
 
     /**

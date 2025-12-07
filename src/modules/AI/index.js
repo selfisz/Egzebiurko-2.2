@@ -3,12 +3,11 @@
  */
 
 import AIStore from './AIStore.js';
-import { AIView } from './AIView.js';
-
-const view = new AIView();
+import aiView from './AIView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => aiView.init(),
+    destroy: () => aiView.destroy?.(),
+    view: aiView,
     store: AIStore
 };

@@ -57,6 +57,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function startApp() {
     await initDB();
+    
+    // Initialize modular architecture with AppController
+    try {
+        const { default: appController } = await import('../src/core/AppController.js');
+        await appController.initialize();
+        console.log('[Main] Modular architecture initialized successfully');
+        
+        // Make appController globally available for debugging
+        window.appController = appController;
+    } catch (error) {
+        console.error('[Main] Failed to initialize modular architecture:', error);
+        // Continue with legacy initialization even if AppController fails
+    }
+    
     handleRouteChange(); // Initial route handler
     lucide.createIcons();
     

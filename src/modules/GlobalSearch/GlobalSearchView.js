@@ -12,7 +12,6 @@ class GlobalSearchView {
         this.resultsContainer = null;
         this.filters = null;
         this.loading = null;
-        this.init();
     }
 
     /**

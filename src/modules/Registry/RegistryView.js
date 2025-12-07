@@ -8,11 +8,11 @@ import RegistryStore from './RegistryStore.js';
 class RegistryView {
     constructor() {
         this.container = null;
+        this.bailiffsList = null;
         this.searchInput = null;
-        this.importBtn = null;
+        this.uploadBtn = null;
         this.fileInput = null;
-        this.loadingState = null;
-        this.init();
+        this.activeBailiffId = null;
     }
 
     /**

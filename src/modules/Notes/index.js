@@ -3,12 +3,11 @@
  */
 
 import NotesStore from './NotesStore.js';
-import { NotesView } from './NotesView.js';
-
-const view = new NotesView();
+import notesView from './NotesView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => notesView.init(),
+    destroy: () => notesView.destroy?.(),
+    view: notesView,
     store: NotesStore
 };

@@ -3,12 +3,11 @@
  */
 
 import RegistryStore from './RegistryStore.js';
-import { RegistryView } from './RegistryView.js';
-
-const view = new RegistryView();
+import registryView from './RegistryView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => registryView.init(),
+    destroy: () => registryView.destroy?.(),
+    view: registryView,
     store: RegistryStore
 };

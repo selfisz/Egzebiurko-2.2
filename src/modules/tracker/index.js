@@ -1,18 +1,13 @@
 /**
- * Tracker Module - Case Management System
+ * Tracker Module - Entry Point
  */
 
 import TrackerStore from './TrackerStore.js';
-
-/**
- * Initialize Tracker module
- */
-function init() {
-    console.log('[Tracker] Module initialized');
-}
+import trackerView from './TrackerView.js';
 
 export default {
-    init,
-    store: TrackerStore,
-    ...TrackerStore
+    init: () => trackerView.init(),
+    destroy: () => trackerView.destroy?.(),
+    view: trackerView,
+    store: TrackerStore
 };

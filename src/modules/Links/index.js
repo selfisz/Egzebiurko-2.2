@@ -3,12 +3,11 @@
  */
 
 import LinksStore from './LinksStore.js';
-import { LinksView } from './LinksView.js';
-
-const view = new LinksView();
+import linksView from './LinksView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => linksView.init(),
+    destroy: () => linksView.destroy?.(),
+    view: linksView,
     store: LinksStore
 };

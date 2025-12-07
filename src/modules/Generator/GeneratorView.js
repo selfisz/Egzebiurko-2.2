@@ -15,7 +15,6 @@ class GeneratorView {
         };
         this.editor = null;
         this.activeTab = 'templates';
-        this.init();
     }
 
     /**

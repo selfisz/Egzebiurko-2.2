@@ -16,7 +16,6 @@ class SecurityView {
             audit: null
         };
         this.activeTab = 'general';
-        this.init();
     }
 
     /**

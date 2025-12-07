@@ -3,12 +3,11 @@
  */
 
 import TerrainStore from './TerrainStore.js';
-import { TerrainView } from './TerrainView.js';
-
-const view = new TerrainView();
+import terrainView from './TerrainView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => terrainView.init(),
+    destroy: () => terrainView.destroy?.(),
+    view: terrainView,
     store: TerrainStore
 };

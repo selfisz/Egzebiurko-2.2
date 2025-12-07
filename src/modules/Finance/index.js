@@ -3,12 +3,11 @@
  */
 
 import FinanceStore from './FinanceStore.js';
-import { FinanceView } from './FinanceView.js';
-
-const view = new FinanceView();
+import financeView from './FinanceView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => financeView.init(),
+    destroy: () => financeView.destroy?.(),
+    view: financeView,
     store: FinanceStore
 };

@@ -10,7 +10,6 @@ class NotesView {
         this.container = null;
         this.searchInput = null;
         this.editor = null;
-        this.init();
     }
 
     /**

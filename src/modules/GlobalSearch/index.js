@@ -1,18 +1,13 @@
 /**
- * GlobalSearch Module - Cross-module Search Functionality
+ * Global Search Module - Entry Point
  */
 
 import GlobalSearchStore from './GlobalSearchStore.js';
-
-/**
- * Initialize GlobalSearch module
- */
-function init() {
-    console.log('[GlobalSearch] Module initialized');
-}
+import globalSearchView from './GlobalSearchView.js';
 
 export default {
-    init,
-    store: GlobalSearchStore,
-    ...GlobalSearchStore
+    init: () => globalSearchView.init(),
+    destroy: () => globalSearchView.destroy?.(),
+    view: globalSearchView,
+    store: GlobalSearchStore
 };

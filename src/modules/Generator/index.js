@@ -3,12 +3,11 @@
  */
 
 import GeneratorStore from './GeneratorStore.js';
-import { GeneratorView } from './GeneratorView.js';
-
-const view = new GeneratorView();
+import generatorView from './GeneratorView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
+    init: () => generatorView.init(),
+    destroy: () => generatorView.destroy?.(),
+    view: generatorView,
     store: GeneratorStore
 };

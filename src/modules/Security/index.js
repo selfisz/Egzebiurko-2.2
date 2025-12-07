@@ -3,6 +3,7 @@
  */
 
 import SecurityStore from './SecurityStore.js';
+import securityView from './SecurityView.js';
 
 /**
  * Initialize Security module
@@ -12,7 +13,8 @@ function init() {
 }
 
 export default {
-    init,
-    store: SecurityStore,
-    ...SecurityStore
+    init: () => securityView.init(),
+    destroy: () => securityView.destroy?.(),
+    view: securityView,
+    store: SecurityStore
 };
