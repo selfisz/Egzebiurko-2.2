@@ -18,7 +18,15 @@ async function renderDashboardStats() {
         }
         
         const db = state.db;
-        const cases = db.objectStoreNames.contains('tracker') ? await db.getAll('tracker') : [];
+
+        // Fallback: jeśli nie ma store 'tracker', użyj starego store 'cases'
+        let cases = [];
+        if (db.objectStoreNames.contains('tracker')) {
+            cases = await db.getAll('tracker');
+        } else if (db.objectStoreNames.contains('cases')) {
+            cases = await db.getAll('cases');
+        }
+
         const cars = db.objectStoreNames.contains('garage') ? await db.getAll('garage') : [];
         const notes = db.objectStoreNames.contains('notes') ? await db.getAll('notes') : [];
         
@@ -166,7 +174,14 @@ async function renderDashboardWidgets() {
         }
         
         const db = state.db;
-        const cases = db.objectStoreNames.contains('tracker') ? await db.getAll('tracker') : [];
+
+        // Fallback: jeśli nie ma store 'tracker', użyj starego store 'cases'
+        let cases = [];
+        if (db.objectStoreNames.contains('tracker')) {
+            cases = await db.getAll('tracker');
+        } else if (db.objectStoreNames.contains('cases')) {
+            cases = await db.getAll('cases');
+        }
         
         // === WIDGET STATYSTYK ===
         let statisticsWidget = '';
