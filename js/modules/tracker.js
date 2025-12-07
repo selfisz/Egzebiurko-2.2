@@ -563,13 +563,22 @@ const trackerModule = (() => {
 
     function toggleCaseSelection(caseId) {
         const checkbox = document.querySelector(`.bulk-checkbox[data-case-id="${caseId}"]`);
+        console.log('toggleCaseSelection wywołany dla caseId:', caseId, 'checkbox:', checkbox);
         
         if (selectedCases.has(caseId)) {
             selectedCases.delete(caseId);
-            if (checkbox) checkbox.checked = false;
+            if (checkbox) {
+                checkbox.checked = false;
+                checkbox.classList.remove('is-checked');
+                console.log('Odznaczono checkbox:', caseId);
+            }
         } else {
             selectedCases.add(caseId);
-            if (checkbox) checkbox.checked = true;
+            if (checkbox) {
+                checkbox.checked = true;
+                checkbox.classList.add('is-checked');
+                console.log('Zaznaczono checkbox:', caseId, 'ma klasę is-checked:', checkbox.classList.contains('is-checked'));
+            }
         }
         updateBulkActionsBar();
     }
