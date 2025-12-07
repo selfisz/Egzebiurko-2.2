@@ -104,58 +104,88 @@ async function startApp() {
     }
     
     // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION
-    // Use script injection to bypass ES6 module restrictions
+    console.log('[Main] Starting modular architecture load...');
     setTimeout(() => loadModularArchitecture(), 1000);
 }
 
 // Function to load modular architecture after legacy code is ready
 async function loadModularArchitecture() {
     try {
+        console.log('[Main] Loading modular architecture...');
+        
         // Create a temporary script element to load store
         const loadModule = async (modulePath) => {
+            console.log(`[Main] Attempting to load: ${modulePath}`);
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.type = 'module';
                 script.textContent = `
-                    import module from '${modulePath}';
-                    window.__tempModule = module;
+                    try {
+                        import module from '${modulePath}';
+                        window.__tempModule = module;
+                    } catch (err) {
+                        console.error('[Module Load Error]:', err);
+                        window.__tempModuleError = err;
+                    }
                 `;
-                script.onload = () => resolve(window.__tempModule);
-                script.onerror = reject;
+                script.onload = () => {
+                    if (window.__tempModuleError) {
+                        reject(window.__tempModuleError);
+                        delete window.__tempModuleError;
+                    } else {
+                        resolve(window.__tempModule);
+                    }
+                };
+                script.onerror = (err) => {
+                    console.error(`[Main] Script error loading ${modulePath}:`, err);
+                    reject(err);
+                };
+                
                 document.head.appendChild(script);
-                // Clean up
+                
+                // Clean up after resolve/reject
                 setTimeout(() => {
-                    document.head.removeChild(script);
-                    delete window.__tempModule;
-                }, 100);
+                    try {
+                        if (document.head.contains(script)) {
+                            document.head.removeChild(script);
+                        }
+                        delete window.__tempModule;
+                    } catch (e) {
+                        console.warn('[Main] Cleanup error:', e);
+                    }
+                }, 200);
             });
         };
         
         // Load store first
-        console.log('[Main] Loading modular architecture...');
         const storeModule = await loadModule('../src/store/index.js');
         window.store = storeModule.default || storeModule;
-        console.log('[Main] Store loaded');
+        console.log('[Main] ✅ Store loaded successfully');
         
         // Commit database to store if available
         if (window.store && state.db) {
             window.store.commit('SET_DB', state.db);
-            console.log('[Main] Database committed to store');
+            console.log('[Main] ✅ Database committed to store');
         }
         
         // Load AppController
         const appControllerModule = await loadModule('../src/core/AppController.js');
         window.appController = appControllerModule.default || appControllerModule;
-        console.log('[Main] AppController loaded');
+        console.log('[Main] ✅ AppController loaded successfully');
         
         // Initialize
         await window.appController.initialize();
-        console.log('[Main] Modular architecture initialized successfully');
+        console.log('[Main] ✅ Modular architecture initialized successfully');
         
     } catch (error) {
-        console.error('[Main] Failed to load modular architecture:', error);
-        console.error('Error details:', error.stack);
-        console.log('[Main] Continuing with legacy code only');
+        console.error('[Main] ❌ Failed to load modular architecture:');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Error type:', error.constructor.name);
+        console.log('[Main] ⚠️ Continuing with legacy code only - application should still work');
+        
+        // Don't throw - let legacy code continue working
+        return false;
     }
 }
 
