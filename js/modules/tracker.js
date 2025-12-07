@@ -466,7 +466,6 @@ const trackerModule = (() => {
     }
 
     // Operacje masowe - NOWA IMPLEMENTACJA
-    let bulkMode = false;
     let selectedCases = new Set();
 
     function enterBulkMode() {
