@@ -349,7 +349,7 @@ class RegistryView {
             const bailiffs = store.get('bailiffs');
             
             if (bailiffs.length === 0) {
-                store.commit('ADD', {
+                store.commit('ADD_NOTIFICATION', {
                     type: 'warning',
                     message: 'Brak komorników do eksportu'
                 });
