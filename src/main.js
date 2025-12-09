@@ -24,6 +24,21 @@ import testModule from './modules/TestModule/index.js';
 
 console.log('[App] Starting Egzebiurko 3.0...');
 
+// Helper: safely call optional load() on modules
+function safeLoad(module, name) {
+    try {
+        if (module && typeof module.load === 'function') {
+            console.log(`[App] Loading module data: ${name}...`);
+            return module.load();
+        }
+        console.warn(`[App] Module ${name} has no load() - skipping initial data load`);
+        return Promise.resolve();
+    } catch (e) {
+        console.error(`[App] Error while calling ${name}.load():`, e);
+        return Promise.resolve();
+    }
+}
+
 /**
  * Inicjalizacja aplikacji
  */
@@ -33,16 +48,16 @@ async function initApp() {
         console.log('[App] Initializing database...');
         await db.init();
         
-        // 2. Załaduj dane do store
+        // 2. Załaduj dane do store (bezpiecznie – nie zakładaj, że każdy moduł ma load())
         console.log('[App] Loading initial data...');
         await Promise.all([
             store.dispatch('loadCases'),
-            notesModule.load(),
-            linksModule.load(),
-            registryModule.load(),
-            carsModule.load(),
-            terrainModule.load(),
-            trackerModule.load()
+            safeLoad(notesModule, 'notes'),
+            safeLoad(linksModule, 'links'),
+            safeLoad(registryModule, 'registry'),
+            safeLoad(carsModule, 'cars'),
+            safeLoad(terrainModule, 'terrain'),
+            safeLoad(trackerModule, 'tracker')
         ]);
         
         // 3. Inicjalizuj moduły
