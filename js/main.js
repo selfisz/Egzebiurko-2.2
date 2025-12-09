@@ -175,13 +175,11 @@ async function loadModularArchitecture() {
             });
         };
         
-        // Load AppController
-        const appControllerModule = await loadModule('../src/core/AppController.js');
-        window.appController = appControllerModule.default || appControllerModule;
-        console.log('[Main] ✅ AppController loaded successfully');
+        // Load ES6 main module
+        const mainModule = await loadModule('../src/main.js');
+        console.log('[Main] ✅ ES6 main module loaded successfully');
         
-        // Initialize
-        await window.appController.initialize();
+        // Note: src/main.js auto-initializes, no need to call initialize()
         console.log('[Main] ✅ Modular architecture initialized successfully');
         
     } catch (error) {
