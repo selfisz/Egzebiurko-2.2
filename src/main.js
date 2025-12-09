@@ -62,19 +62,47 @@ async function initApp() {
         
         // 3. Inicjalizuj moduły
         console.log('[App] Initializing modules...');
+        
+        console.log('[App] Init: quickActions');
         quickActionsModule.init();
+        
+        console.log('[App] Init: notes');
         notesModule.init();
+        
+        console.log('[App] Init: links');
         linksModule.init();
+        
+        console.log('[App] Init: registry');
         registryModule.init();
+        
+        console.log('[App] Init: finance');
         financeModule.init();
+        
+        console.log('[App] Init: cars');
         carsModule.init();
+        
+        console.log('[App] Init: generator');
         generatorModule.init();
+        
+        console.log('[App] Init: ai');
         aiModule.init();
+        
+        console.log('[App] Init: statistics');
         statisticsModule.init();
+        
+        console.log('[App] Init: security');
         securityModule.init();
+        
+        console.log('[App] Init: globalSearch');
         globalSearchModule.init();
+        
+        console.log('[App] Init: terrain');
         terrainModule.init();
+        
+        console.log('[App] Init: tracker');
         trackerModule.init();
+        
+        console.log('[App] Init: testModule');
         testModule.init(); // TEST MODULE - powinien pokazać alert
         
         // Export views to window for legacy HTML compatibility

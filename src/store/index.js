@@ -179,6 +179,18 @@ const store = new Store({
   notifications: [],
   searchQuery: '',
   
+  // Module-specific State
+  aiMessages: [],
+  terrainScanning: false,
+  terrainScanResults: [],
+  trackerActive: false,
+  trackerActivities: [],
+  trackerStatistics: {},
+  statistics: {},
+  globalSearchResults: [],
+  globalSearchLoading: false,
+  globalSearchFilters: {},
+  
   // Database
   db: null,
   dbReady: false
@@ -269,6 +281,48 @@ store.registerMutation('ADD_AUDIT_ENTRY', (state, entry) => {
     timestamp: new Date().toISOString(),
     ...entry
   });
+});
+
+// === MODULE-SPECIFIC MUTATIONS ===
+
+store.registerMutation('SET_AI_MESSAGES', (state, messages) => {
+  state.aiMessages = messages;
+});
+
+store.registerMutation('SET_TERRAIN_SCANNING', (state, scanning) => {
+  state.terrainScanning = scanning;
+});
+
+store.registerMutation('SET_TERRAIN_SCAN_RESULTS', (state, results) => {
+  state.terrainScanResults = results;
+});
+
+store.registerMutation('SET_TRACKER_ACTIVE', (state, active) => {
+  state.trackerActive = active;
+});
+
+store.registerMutation('SET_TRACKER_ACTIVITIES', (state, activities) => {
+  state.trackerActivities = activities;
+});
+
+store.registerMutation('SET_TRACKER_STATISTICS', (state, statistics) => {
+  state.trackerStatistics = statistics;
+});
+
+store.registerMutation('SET_STATISTICS', (state, statistics) => {
+  state.statistics = statistics;
+});
+
+store.registerMutation('SET_GLOBAL_SEARCH_RESULTS', (state, results) => {
+  state.globalSearchResults = results;
+});
+
+store.registerMutation('SET_GLOBAL_SEARCH_LOADING', (state, loading) => {
+  state.globalSearchLoading = loading;
+});
+
+store.registerMutation('SET_GLOBAL_SEARCH_FILTERS', (state, filters) => {
+  state.globalSearchFilters = filters;
 });
 
 // === ACTIONS ===
