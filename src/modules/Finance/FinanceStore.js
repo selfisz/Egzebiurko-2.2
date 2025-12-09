@@ -3,10 +3,40 @@
  */
 
 import store from '../../store/index.js';
-import { addBusinessDays, isHoliday, isWeekend } from '../../utils/dates.js';
 
 // Finance nie potrzebuje state w store - to są tylko kalkulatory
 // Ale dodajemy helper functions
+
+/**
+ * Helper: Check if date is weekend
+ */
+function isWeekend(date) {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday or Saturday
+}
+
+/**
+ * Helper: Check if date is Polish holiday
+ */
+function isHoliday(date) {
+    const year = date.getFullYear();
+    const mmdd = date.toISOString().slice(5, 10);
+    
+    // Polish holidays (simplified - add more as needed)
+    const holidays = [
+        '01-01', // Nowy Rok
+        '01-06', // Trzech Króli
+        '05-01', // Święto Pracy
+        '05-03', // Konstytucja 3 Maja
+        '08-15', // Wniebowzięcie NMP
+        '11-01', // Wszystkich Świętych
+        '11-11', // Niepodległości
+        '12-25', // Boże Narodzenie
+        '12-26'  // Drugi dzień Bożego Narodzenia
+    ];
+    
+    return holidays.includes(mmdd);
+}
 
 /**
  * Kalkulator salda

@@ -158,13 +158,22 @@ class FinanceView {
      */
     calculateBalance() {
         try {
-            const data = this.getFormData('balanceForm');
-            const result = FinanceStore.calculateBalance(data);
+            const om = document.getElementById('bOldM')?.value || 0;
+            const oi = document.getElementById('bOldI')?.value || 0;
+            const nm = document.getElementById('bNewM')?.value || 0;
             
-            this.displayResult('balanceResult', result);
+            const result = FinanceStore.calculateBalance(om, oi, nm);
+            
+            // Display individual results
+            const sumEl = document.getElementById('bSum');
+            const newIEl = document.getElementById('bNewI');
+            const diffEl = document.getElementById('bDiff');
+            
+            if (sumEl) sumEl.innerText = result.sum;
+            if (newIEl) newIEl.innerText = result.newInterest;
+            if (diffEl) diffEl.innerText = result.diff ? `Różnica: ${result.diff}` : '';
         } catch (error) {
             console.error('[FinanceView] Balance calculation error:', error);
-            this.displayError('balanceResult', error.message);
         }
     }
 
@@ -173,13 +182,18 @@ class FinanceView {
      */
     calculateKPA() {
         try {
-            const data = this.getFormData('kpaForm');
-            const result = FinanceStore.calculateKPA(data);
+            const dateInput = document.getElementById('awizoDate')?.value;
+            if (!dateInput) return;
             
-            this.displayResult('kpaResult', result);
+            const result = FinanceStore.calculateKPA(dateInput);
+            
+            const resultEl = document.getElementById('kpaResult');
+            const noteEl = document.getElementById('kpaNote');
+            
+            if (resultEl) resultEl.innerText = result.date;
+            if (noteEl) noteEl.innerText = result.note;
         } catch (error) {
             console.error('[FinanceView] KPA calculation error:', error);
-            this.displayError('kpaResult', error.message);
         }
     }
 
@@ -188,13 +202,17 @@ class FinanceView {
      */
     calculateValuation() {
         try {
-            const data = this.getFormData('valuationForm');
-            const result = FinanceStore.calculateVehicleValuation(data);
+            const p1 = document.getElementById('fcP1')?.value || 0;
+            const p2 = document.getElementById('fcP2')?.value || 0;
+            const p3 = document.getElementById('fcP3')?.value || 0;
+            const isDamaged = document.getElementById('fcBad')?.checked || false;
             
-            this.displayResult('valuationResult', result);
+            const result = FinanceStore.calculateCarValuation(p1, p2, p3, isDamaged);
+            
+            const resultEl = document.getElementById('fcResult');
+            if (resultEl) resultEl.innerText = `${result} zł`;
         } catch (error) {
             console.error('[FinanceView] Valuation calculation error:', error);
-            this.displayError('valuationResult', error.message);
         }
     }
 
@@ -203,13 +221,16 @@ class FinanceView {
      */
     calculateInterest() {
         try {
-            const data = this.getFormData('interestForm');
-            const result = FinanceStore.calculateInterest(data);
+            const principal = document.getElementById('intPrincipal')?.value || 0;
+            const rate = document.getElementById('intRate')?.value || 0;
+            const days = document.getElementById('intDays')?.value || 0;
             
-            this.displayResult('interestResult', result);
+            const result = FinanceStore.calculateInterest(principal, rate, days);
+            
+            const resultEl = document.getElementById('intResult');
+            if (resultEl) resultEl.innerText = `${result} zł`;
         } catch (error) {
             console.error('[FinanceView] Interest calculation error:', error);
-            this.displayError('interestResult', error.message);
         }
     }
 
@@ -218,13 +239,14 @@ class FinanceView {
      */
     calculateCosts() {
         try {
-            const data = this.getFormData('costsForm');
-            const result = FinanceStore.calculateExecutionCosts(data);
+            const amount = document.getElementById('costsAmount')?.value || 0;
             
-            this.displayResult('costsResult', result);
+            const result = FinanceStore.calculateExecutionCosts(amount);
+            
+            const resultEl = document.getElementById('costsResult');
+            if (resultEl) resultEl.innerText = `${result} zł`;
         } catch (error) {
             console.error('[FinanceView] Costs calculation error:', error);
-            this.displayError('costsResult', error.message);
         }
     }
 
