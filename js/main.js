@@ -124,25 +124,17 @@ async function startApp() {
         securityModule.init();
     }
     
-    // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION (DEV ONLY)
-    if (IS_DEV_ENV) {
-        console.log('[Main] Starting modular architecture load (DEV)...');
-        setTimeout(() => loadModularArchitecture(), 1000);
-    } else {
-        console.log('[Main] Skipping AppController load (non-DEV env, legacy only).');
-    }
+    // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION
+    // Changed: Always load ES6 modules, not just in DEV
+    console.log('[Main] Starting modular architecture load...');
+    setTimeout(() => loadModularArchitecture(), 1000);
 }
 
-// Function to load AppController after legacy code is ready (DEV only)
-// (Store is already loaded in startApp in DEV)
+// Function to load AppController after legacy code is ready
+// Changed: Always load, not just in DEV
 async function loadModularArchitecture() {
     try {
-        if (!IS_DEV_ENV) {
-            console.log('[Main] loadModularArchitecture() called on production host - skipping.');
-            return;
-        }
-
-        console.log('[Main] Loading AppController (DEV)...');
+        console.log('[Main] Loading AppController...');
         
         // Commit database to store if available
         if (window.store && state.db) {
