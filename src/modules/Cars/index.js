@@ -3,12 +3,11 @@
  */
 
 import CarsStore from './CarsStore.js';
-import { CarsView } from './CarsView.js';
-
-const view = new CarsView();
+import carsView from './CarsView.js';
 
 export default {
-    init: () => view.init(),
-    destroy: () => view.destroy(),
-    store: CarsStore
+    init: () => carsView.init(),
+    destroy: () => carsView.destroy(),
+    carsView,
+    CarsStore
 };

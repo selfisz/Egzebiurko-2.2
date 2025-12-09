@@ -10,6 +10,7 @@ import registryModule from '../modules/Registry/index.js';
 import financeModule from '../modules/Finance/index.js';
 import generatorModule from '../modules/Generator/index.js';
 import aiModule from '../modules/AI/index.js';
+import carsModule from '../modules/Cars/index.js';
 import statisticsModule from '../modules/Statistics/index.js';
 import securityModule from '../modules/Security/index.js';
 import globalSearchModule from '../modules/GlobalSearch/index.js';
@@ -31,6 +32,7 @@ class AppController {
             finance: financeModule,
             generator: generatorModule,
             ai: aiModule,
+            cars: carsModule,
             statistics: statisticsModule,
             security: securityModule,
             globalSearch: globalSearchModule,
