@@ -92,7 +92,65 @@ store.registerAction('importBailiffs', async ({ commit, state }, file) => {
     });
 });
 
+store.registerAction('removeBailiff', async ({ commit, state }, bailiffName) => {
+    if (!state.db) throw new Error('Database not initialized');
+    
+    try {
+        // Find bailiff by name and delete
+        const bailiffs = await state.db.getAll('bailiffs');
+        const bailiff = bailiffs.find(b => b.name === bailiffName);
+        
+        if (bailiff && bailiff.id) {
+            await state.db.delete('bailiffs', bailiff.id);
+        }
+        
+        // Reload
+        const updatedBailiffs = await state.db.getAll('bailiffs');
+        commit('SET_BAILIFFS', updatedBailiffs);
+        
+        return true;
+    } catch (error) {
+        console.error('[Registry] Remove error:', error);
+        throw error;
+    }
+});
+
+store.registerAction('exportBailiffs', async ({ state }) => {
+    if (!state.bailiffs || state.bailiffs.length === 0) {
+        throw new Error('No bailiffs to export');
+    }
+    
+    try {
+        // Prepare data for Excel
+        const data = [
+            ['Nazwa', 'NIP', 'Adres', 'EPU'], // Header
+            ...state.bailiffs.map(b => [
+                b.name || '',
+                b.nip || '',
+                b.address || '',
+                b.epu || ''
+            ])
+        ];
+        
+        // Create workbook
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Komornicy');
+        
+        // Download
+        const filename = `komornicy_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        
+        return true;
+    } catch (error) {
+        console.error('[Registry] Export error:', error);
+        throw error;
+    }
+});
+
 export default {
     load: () => store.dispatch('loadBailiffs'),
-    import: (file) => store.dispatch('importBailiffs', file)
+    importFromExcel: (file) => store.dispatch('importBailiffs', file),
+    remove: (bailiffName) => store.dispatch('removeBailiff', bailiffName),
+    exportToExcel: () => store.dispatch('exportBailiffs')
 };
