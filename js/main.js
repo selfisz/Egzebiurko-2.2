@@ -124,10 +124,9 @@ async function startApp() {
         securityModule.init();
     }
     
-    // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION
-    // Changed: Always load ES6 modules, not just in DEV
-    console.log('[Main] Starting modular architecture load...');
-    setTimeout(() => loadModularArchitecture(), 1000);
+    // ES6 modules are now loaded directly via <script type="module" src="/src/main.js">
+    // No need for dynamic loading here anymore
+    console.log('[Main] Legacy initialization complete. ES6 modules load separately.');
 }
 
 // Function to load AppController after legacy code is ready
