@@ -44,6 +44,7 @@ store.registerAction('buildSearchIndex', async ({ commit, state }) => {
             cases: cases.map(case_ => ({
                 id: case_.id,
                 type: 'case',
+                module: 'tracker',
                 title: case_.no || 'Brak numeru',
                 content: `${case_.debtor || ''} ${case_.unp || ''} ${case_.note || ''}`,
                 metadata: {
@@ -57,6 +58,7 @@ store.registerAction('buildSearchIndex', async ({ commit, state }) => {
             cars: cars.map(car => ({
                 id: car.id,
                 type: 'car',
+                module: 'cars',
                 title: `${car.make || ''} ${car.model || ''} ${car.year || ''}`.trim() || 'Pojazd',
                 content: `${car.plate || ''} ${car.vin || ''} ${car.caseNumber || ''}`,
                 metadata: {
@@ -70,6 +72,7 @@ store.registerAction('buildSearchIndex', async ({ commit, state }) => {
             notes: notes.map(note => ({
                 id: note.id,
                 type: 'note',
+                module: 'notes',
                 title: note.title || 'Bez tytułu',
                 content: note.content || '',
                 metadata: {
@@ -80,6 +83,7 @@ store.registerAction('buildSearchIndex', async ({ commit, state }) => {
             pdfs: pdfs.map(pdf => ({
                 id: pdf.id,
                 type: 'pdf',
+                module: 'ai',
                 title: pdf.name,
                 content: pdf.text || '',
                 metadata: {
@@ -92,6 +96,7 @@ store.registerAction('buildSearchIndex', async ({ commit, state }) => {
             bailiffs: bailiffs.map(bailiff => ({
                 id: bailiff.name,
                 type: 'bailiff',
+                module: 'registry',
                 title: bailiff.name,
                 content: `${bailiff.nip || ''} ${bailiff.address || ''} ${bailiff.epu || ''}`,
                 metadata: {},
