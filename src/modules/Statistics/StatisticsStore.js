@@ -7,10 +7,14 @@ import store from '../../store/index.js';
 // Add statistics state
 if (!store.state.statisticsData) store.state.statisticsData = {};
 if (!store.state.statisticsLoading) store.state.statisticsLoading = false;
+// Alias for views that subscribe to `statistics`
+if (!store.state.statistics) store.state.statistics = store.state.statisticsData;
 
 // Mutations
 store.registerMutation('SET_STATISTICS_DATA', (state, data) => {
     state.statisticsData = data;
+    // Keep alias in sync for views using `statistics`
+    state.statistics = data;
 });
 
 store.registerMutation('SET_STATISTICS_LOADING', (state, loading) => {
@@ -240,9 +244,16 @@ function convertToCSV(data) {
 }
 
 export default {
+    // Original low-level helpers
     generate: () => store.dispatch('generateStatistics'),
     generateDailyReport: () => store.dispatch('generateDailyReport'),
     export: (format) => store.dispatch('exportStatistics', format),
-    getData: () => store.get('statisticsData'),
-    isLoading: () => store.get('statisticsLoading')
+    getData: () => store.get('statistics') || store.get('statisticsData'),
+    isLoading: () => store.get('statisticsLoading'),
+
+    // High-level API expected by StatisticsView
+    loadStatistics: () => store.dispatch('loadStatistics'),
+    updateStatistics: (dateRange) => store.dispatch('updateStatistics', dateRange),
+    refreshStatistics: () => store.dispatch('refreshStatistics'),
+    exportStatistics: (format = 'json') => store.dispatch('exportStatistics', format)
 };
