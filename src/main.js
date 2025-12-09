@@ -62,6 +62,7 @@ async function initApp() {
         
         // Export views to window for legacy HTML compatibility
         window.terrainView = terrainModule.view;
+        window.trackerView = trackerModule.view;
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');

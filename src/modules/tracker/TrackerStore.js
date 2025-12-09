@@ -124,8 +124,11 @@ store.registerAction('toggleCaseFavorite', async ({ commit, state }, caseId) => 
 });
 
 export default {
+    load: () => store.dispatch('loadTrackerCases'),
     loadCases: () => store.dispatch('loadTrackerCases'),
     saveCase: (caseData) => store.dispatch('saveTrackerCase', caseData),
     deleteCase: (caseId) => store.dispatch('deleteTrackerCase', caseId),
-    toggleFavorite: (caseId) => store.dispatch('toggleCaseFavorite', caseId)
+    toggleFavorite: (caseId) => store.dispatch('toggleCaseFavorite', caseId),
+    getCases: () => store.get('cases') || [],
+    getCurrentCase: () => store.get('currentCase')
 };

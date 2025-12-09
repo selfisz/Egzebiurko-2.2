@@ -1,5 +1,5 @@
 /**
- * Tracker View - Activity Tracking and Monitoring UI
+ * Tracker View - Case Tracker UI (Terminarz)
  */
 
 import store from '../../store/index.js';
@@ -8,11 +8,9 @@ import TrackerStore from './TrackerStore.js';
 class TrackerView {
     constructor() {
         this.container = null;
-        this.tabs = null;
-        this.tracking = null;
-        this.history = null;
-        this.stats = null;
-        this.activeTab = 'tracking';
+        this.trackerList = null;
+        this.isArchivedView = false;
+        this.currentFilter = '';
     }
 
     /**
@@ -23,10 +21,7 @@ class TrackerView {
         
         // Get DOM elements
         this.container = document.getElementById('trackerContainer');
-        this.tabs = document.getElementById('trackerTabs');
-        this.tracking = document.getElementById('trackingPanel');
-        this.history = document.getElementById('trackingHistory');
-        this.stats = document.getElementById('trackingStats');
+        this.trackerList = document.getElementById('tracker-list');
 
         // Setup event listeners
         this.setupEventListeners();
@@ -44,107 +39,82 @@ class TrackerView {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Tab switching
-        if (this.tabs) {
-            this.tabs.addEventListener('click', (e) => {
-                const tab = e.target.closest('[data-tab]');
-                if (tab) {
-                    this.switchTab(tab.dataset.tab);
+        // Search filter
+        const searchInput = document.getElementById('trSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.currentFilter = e.target.value;
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Status filter
+        const statusFilter = document.getElementById('trFilterStatus');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Priority filter
+        const priorityFilter = document.getElementById('trFilterPriority');
+        if (priorityFilter) {
+            priorityFilter.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Urgent filter
+        const urgentFilter = document.getElementById('trFilterUrgent');
+        if (urgentFilter) {
+            urgentFilter.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Favorite filter
+        const favoriteFilter = document.getElementById('trFilterFavorite');
+        if (favoriteFilter) {
+            favoriteFilter.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Tag filter
+        const tagFilter = document.getElementById('trFilterTag');
+        if (tagFilter) {
+            tagFilter.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Sort
+        const sortSelect = document.getElementById('trSort');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.renderFullTracker(this.currentFilter);
+            });
+        }
+
+        // Case list click handler
+        if (this.trackerList) {
+            this.trackerList.addEventListener('click', (e) => {
+                const caseBinder = e.target.closest('.case-binder');
+                if (caseBinder) {
+                    const caseId = parseInt(caseBinder.dataset.caseId);
+                    if (caseId) this.openCase(caseId);
                 }
             });
         }
-
-        // Start/stop tracking
-        const startBtn = document.getElementById('startTrackingBtn');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => {
-                this.startTracking();
-            });
-        }
-
-        const stopBtn = document.getElementById('stopTrackingBtn');
-        if (stopBtn) {
-            stopBtn.addEventListener('click', () => {
-                this.stopTracking();
-            });
-        }
-
-        // Add activity
-        const addActivityBtn = document.getElementById('addActivityBtn');
-        if (addActivityBtn) {
-            addActivityBtn.addEventListener('click', () => {
-                this.showAddActivityDialog();
-            });
-        }
-
-        // Clear history
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        if (clearHistoryBtn) {
-            clearHistoryBtn.addEventListener('click', () => {
-                this.clearHistory();
-            });
-        }
-
-        // Export data
-        const exportBtn = document.getElementById('exportTrackerDataBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this.exportData();
-            });
-        }
-
-        // Activity type filter
-        const activityFilter = document.getElementById('activityTypeFilter');
-        if (activityFilter) {
-            activityFilter.addEventListener('change', (e) => {
-                this.filterActivities(e.target.value);
-            });
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 't') {
-                    e.preventDefault();
-                    this.startTracking();
-                }
-                if (e.key === 's') {
-                    e.preventDefault();
-                    this.stopTracking();
-                }
-                if (e.key === 'e') {
-                    e.preventDefault();
-                    this.exportData();
-                }
-                if (e.key === '1') this.switchTab('tracking');
-                if (e.key === '2') this.switchTab('history');
-                if (e.key === '3') this.switchTab('stats');
-            }
-        });
     }
 
     /**
      * Setup store subscriptions
      */
     setupStoreSubscriptions() {
-        // Subscribe to tracking state
-        store.subscribe('trackerActive', (active) => {
-            this.setTrackingState(active);
-        });
-
-        // Subscribe to activities
-        store.subscribe('trackerActivities', (activities) => {
-            this.renderActivities(activities);
-        });
-
-        // Subscribe to tracking statistics
-        store.subscribe('trackerStatistics', (statistics) => {
-            this.renderStatistics(statistics);
-        });
-
-        // Subscribe to loading state
-        store.subscribe('trackerLoading', (loading) => {
-            this.setLoading(loading);
+        // Subscribe to cases
+        store.subscribe('cases', (cases) => {
+            this.renderFullTracker(this.currentFilter);
         });
     }
 
@@ -153,521 +123,248 @@ class TrackerView {
      */
     async loadInitialData() {
         try {
-            await Promise.all([
-                TrackerStore.loadActivities(),
-                TrackerStore.loadStatistics()
-            ]);
+            await TrackerStore.loadCases();
+            this.renderFullTracker(this.currentFilter);
         } catch (error) {
             console.error('[TrackerView] Load initial data error:', error);
         }
     }
 
     /**
-     * Switch tab
+     * Render full tracker (list or Kanban)
      */
-    switchTab(tabName) {
-        if (!this.tabs) return;
+    renderFullTracker(filter = '') {
+        if (!this.trackerList) return;
 
-        // Update tab buttons
-        const tabButtons = this.tabs.querySelectorAll('[data-tab]');
-        tabButtons.forEach(btn => {
-            if (btn.dataset.tab === tabName) {
-                btn.className = 'px-4 py-2 text-sm font-medium bg-indigo-500 text-white rounded-lg';
+        const countEl = document.getElementById('tracker-case-count');
+        let cases = TrackerStore.getCases();
+
+        // Filter by archived view
+        cases = cases.filter(c => c.archived === this.isArchivedView);
+
+        // Apply search filter
+        if (filter) {
+            const searchTerm = filter.toLowerCase();
+            cases = cases.filter(c =>
+                Object.values(c).some(val => String(val).toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Apply status filter
+        const statusFilterEl = document.getElementById('trFilterStatus');
+        if (statusFilterEl && statusFilterEl.value !== 'all') {
+            cases = cases.filter(c => (c.status || 'new') === statusFilterEl.value);
+        }
+
+        // Apply priority filter
+        const priorityFilterEl = document.getElementById('trFilterPriority');
+        if (priorityFilterEl && priorityFilterEl.value !== 'all') {
+            cases = cases.filter(c => (c.priority || 'medium') === priorityFilterEl.value);
+        }
+
+        // Apply urgent filter
+        const urgentFilterEl = document.getElementById('trFilterUrgent');
+        if (urgentFilterEl && urgentFilterEl.checked) {
+            cases = cases.filter(c => c.urgent);
+        }
+
+        // Apply favorite filter
+        const favoriteFilterEl = document.getElementById('trFilterFavorite');
+        if (favoriteFilterEl && favoriteFilterEl.checked) {
+            cases = cases.filter(c => c.isFavorite);
+        }
+
+        // Apply tag filter
+        const tagFilterEl = document.getElementById('trFilterTag');
+        if (tagFilterEl && tagFilterEl.value !== 'all') {
+            const selectedTag = tagFilterEl.value;
+            cases = cases.filter(c => Array.isArray(c.tags) && c.tags.includes(selectedTag));
+        }
+
+        // Sort cases
+        const sortEl = document.getElementById('trSort');
+        const sortMethod = sortEl ? sortEl.value : 'deadline';
+        const priorityOrder = { low: 0, medium: 1, high: 2 };
+        cases.sort((a, b) => {
+            if (a.urgent !== b.urgent) return b.urgent - a.urgent;
+            switch (sortMethod) {
+                case 'deadline': return new Date(a.date) - new Date(b.date);
+                case 'added': return new Date(b.createdAt) - new Date(a.createdAt);
+                case 'priority':
+                    return (priorityOrder[(b.priority || 'medium')] || 0) - (priorityOrder[(a.priority || 'medium')] || 0);
+                case 'no': return (a.no || '').localeCompare(b.no || '');
+                default: return 0;
+            }
+        });
+
+        // Empty state
+        if (!cases.length) {
+            this.trackerList.innerHTML = `
+                <div class=\"flex flex-col items-center justify-center py-16 text-center\">
+                    <div class=\"w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4\">
+                        <i data-lucide=\"folder-open\" size=\"40\" class=\"text-slate-300 dark:text-slate-600\"></i>
+                    </div>
+                    <h3 class=\"text-lg font-bold text-slate-600 dark:text-slate-400 mb-2\">Brak spraw</h3>
+                    <p class=\"text-sm text-slate-400 dark:text-slate-500 mb-4\">Dodaj pierwszą sprawę, aby rozpocząć</p>
+                </div>`;
+            if (countEl) countEl.textContent = '0 spraw';
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // Archived view: simple list
+        if (this.isArchivedView) {
+            this.trackerList.innerHTML = cases.map(c => this.createCaseBinder(c)).join('');
+            if (countEl) countEl.textContent = `${cases.length} spraw`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // Active view: Kanban (3 columns: Nowe, W toku, Pilne)
+        this.trackerList.innerHTML = `
+            <div id=\"tracker-kanban\" class=\"grid grid-cols-1 lg:grid-cols-3 gap-4\">
+                <div class=\"kanban-column\" data-column=\"new\">
+                    <div class=\"kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase\">
+                        <span>Nowe</span>
+                    </div>
+                    <div id=\"tracker-col-new\" class=\"space-y-3\" data-column=\"new\"></div>
+                </div>
+                <div class=\"kanban-column\" data-column=\"in-progress\">
+                    <div class=\"kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase\">
+                        <span>W toku</span>
+                    </div>
+                    <div id=\"tracker-col-in-progress\" class=\"space-y-3\" data-column=\"in-progress\"></div>
+                </div>
+                <div class=\"kanban-column\" data-column=\"urgent\">
+                    <div class=\"kanban-column-header flex items-center justify-between text-xs text-slate-500 dark:text-slate-300 uppercase\">
+                        <span>Pilne</span>
+                    </div>
+                    <div id=\"tracker-col-urgent\" class=\"space-y-3\" data-column=\"urgent\"></div>
+                </div>
+            </div>`;
+
+        const colNew = document.getElementById('tracker-col-new');
+        const colInProgress = document.getElementById('tracker-col-in-progress');
+        const colUrgent = document.getElementById('tracker-col-urgent');
+
+        const buckets = { new: [], 'in-progress': [], urgent: [] };
+
+        cases.forEach(c => {
+            if (c.urgent) {
+                buckets.urgent.push(c);
+            } else if ((c.status || 'new') === 'in-progress') {
+                buckets['in-progress'].push(c);
             } else {
-                btn.className = 'px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors';
+                buckets.new.push(c);
             }
         });
 
-        // Show/hide panels
-        if (this.tracking) {
-            this.tracking.classList.toggle('hidden', tabName !== 'tracking');
-        }
-        if (this.history) {
-            this.history.classList.toggle('hidden', tabName !== 'history');
-        }
-        if (this.stats) {
-            this.stats.classList.toggle('hidden', tabName !== 'stats');
-        }
+        if (colNew) colNew.innerHTML = (buckets.new || []).map(c => this.createCaseBinder(c)).join('');
+        if (colInProgress) colInProgress.innerHTML = (buckets['in-progress'] || []).map(c => this.createCaseBinder(c)).join('');
+        if (colUrgent) colUrgent.innerHTML = (buckets.urgent || []).map(c => this.createCaseBinder(c)).join('');
 
-        this.activeTab = tabName;
+        if (countEl) countEl.textContent = `${cases.length} spraw`;
+        if (window.lucide) lucide.createIcons();
     }
 
     /**
-     * Start tracking
+     * Create case binder (card)
      */
-    async startTracking() {
-        try {
-            await TrackerStore.startTracking();
+    createCaseBinder(caseData) {
+        const statusLabels = { new: 'Nowa', 'in-progress': 'W toku', finished: 'Zakończona' };
+        const urgentStyle = caseData.urgent ? 'border-red-200 dark:border-red-700' : 'border-slate-200 dark:border-slate-700';
 
-            store.commit('ADD_NOTIFICATION', {
-                type: 'success',
-                message: 'Śledzenie rozpoczęte'
-            });
-        } catch (error) {
-            console.error('[TrackerView] Start tracking error:', error);
-            store.commit('ADD_NOTIFICATION', {
-                type: 'error',
-                message: 'Błąd rozpoczynania śledzenia'
-            });
-        }
-    }
+        // Calculate days remaining
+        const deadlineDate = new Date(caseData.deadline || caseData.date);
+        const daysRemaining = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
+        let deadlineText = '';
+        let deadlineColor = '';
 
-    /**
-     * Stop tracking
-     */
-    async stopTracking() {
-        try {
-            await TrackerStore.stopTracking();
-
-            store.commit('ADD_NOTIFICATION', {
-                type: 'info',
-                message: 'Śledzenie zatrzymane'
-            });
-        } catch (error) {
-            console.error('[TrackerView] Stop tracking error:', error);
-        }
-    }
-
-    /**
-     * Show add activity dialog
-     */
-    showAddActivityDialog() {
-        // This would open a modal/dialog for adding activities
-        store.commit('ADD_NOTIFICATION', {
-            type: 'info',
-            message: 'Dialog dodawania aktywności - do zaimplementowania'
-        });
-    }
-
-    /**
-     * Clear history
-     */
-    async clearHistory() {
-        try {
-            if (!confirm('Czy na pewno wyczyścić historię śledzenia?')) return;
-
-            await TrackerStore.clearHistory();
-
-            store.commit('ADD_NOTIFICATION', {
-                type: 'success',
-                message: 'Historia wyczyszczona'
-            });
-        } catch (error) {
-            console.error('[TrackerView] Clear history error:', error);
-            store.commit('ADD_NOTIFICATION', {
-                type: 'error',
-                message: 'Błąd czyszczenia historii'
-            });
-        }
-    }
-
-    /**
-     * Export data
-     */
-    async exportData() {
-        try {
-            await TrackerStore.exportData();
-
-            store.commit('ADD_NOTIFICATION', {
-                type: 'success',
-                message: 'Dane wyeksportowane'
-            });
-        } catch (error) {
-            console.error('[TrackerView] Export data error:', error);
-            store.commit('ADD_NOTIFICATION', {
-                type: 'error',
-                message: 'Błąd eksportu danych'
-            });
-        }
-    }
-
-    /**
-     * Filter activities
-     */
-    filterActivities(type) {
-        const activities = store.get('trackerActivities') || [];
-        
-        if (!type || type === 'all') {
-            this.renderActivities(activities);
-            return;
+        if (daysRemaining < 0) {
+            deadlineText = `Przeterminowane ${Math.abs(daysRemaining)} dni`;
+            deadlineColor = 'text-red-500';
+        } else if (daysRemaining === 0) {
+            deadlineText = 'Termin dzisiaj';
+            deadlineColor = 'text-orange-500';
+        } else if (daysRemaining <= 7) {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-orange-500';
+        } else if (daysRemaining <= 14) {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-blue-500';
+        } else {
+            deadlineText = `${daysRemaining} dni`;
+            deadlineColor = 'text-green-500';
         }
 
-        const filtered = activities.filter(activity => activity.type === type);
-        this.renderActivities(filtered);
-    }
+        const favoriteIcon = `<i data-lucide=\"star\" class=\"favorite-icon ${caseData.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'} hover:text-yellow-400\" onclick=\"event.stopPropagation(); trackerView.toggleFavorite(${caseData.id})\"></i>`;
 
-    /**
-     * Render activities
-     */
-    renderActivities(activities) {
-        if (!this.history) return;
+        // Tags
+        const tagsHTML = Array.isArray(caseData.tags) && caseData.tags.length > 0
+            ? `<div class=\"flex flex-wrap gap-1 mt-1.5\">
+                ${caseData.tags.map(tag => `<span class=\"px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300\">${tag}</span>`).join('')}
+               </div>`
+            : '';
 
-        const container = this.history.querySelector('.activities-list');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        if (!activities || activities.length === 0) {
-            this.renderEmptyActivities(container);
-            return;
-        }
-
-        // Group activities by date
-        const groupedActivities = this.groupActivitiesByDate(activities);
-
-        Object.entries(groupedActivities).forEach(([date, dateActivities]) => {
-            const section = this.createActivitiesSection(date, dateActivities);
-            container.appendChild(section);
-        });
-
-        // Re-initialize Lucide icons
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    }
-
-    /**
-     * Group activities by date
-     */
-    groupActivitiesByDate(activities) {
-        return activities.reduce((groups, activity) => {
-            const date = new Date(activity.timestamp).toLocaleDateString();
-            if (!groups[date]) {
-                groups[date] = [];
-            }
-            groups[date].push(activity);
-            return groups;
-        }, {});
-    }
-
-    /**
-     * Create activities section
-     */
-    createActivitiesSection(date, activities) {
-        const section = document.createElement('div');
-        section.className = 'mb-6';
-
-        // Section header
-        const header = document.createElement('div');
-        header.className = 'flex items-center justify-between mb-3';
-        header.innerHTML = `
-            <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">${date}</h3>
-            <span class="text-xs text-slate-500">${activities.length} aktywności</span>
-        `;
-        section.appendChild(header);
-
-        // Activities list
-        const list = document.createElement('div');
-        list.className = 'space-y-2';
-
-        activities.forEach(activity => {
-            const activityElement = this.createActivityElement(activity);
-            list.appendChild(activityElement);
-        });
-
-        section.appendChild(list);
-        return section;
-    }
-
-    /**
-     * Create activity element
-     */
-    createActivityElement(activity) {
-        const div = document.createElement('div');
-        div.className = 'p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer';
-        div.dataset.activityId = activity.id;
-
-        const icon = this.getActivityIcon(activity.type);
-        const color = this.getActivityColor(activity.type);
-        const time = new Date(activity.timestamp).toLocaleTimeString();
-
-        div.innerHTML = `
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 ${color} rounded-lg flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="${icon}" class="w-4 h-4 text-white"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between mb-1">
-                        <h4 class="text-sm font-medium text-slate-800 dark:text-white">${activity.title || 'Aktywność'}</h4>
-                        <span class="text-xs text-slate-500">${time}</span>
-                    </div>
-                    <div class="text-xs text-slate-600 dark:text-slate-400">
-                        ${this.getActivityDescription(activity)}
-                    </div>
-                    ${activity.duration ? `
-                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            <i data-lucide="clock" class="w-3 h-3 inline mr-1"></i>
-                            Czas trwania: ${activity.duration}
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="flex items-center space-x-1 ml-2">
-                    <button onclick="event.stopPropagation(); trackerView.viewActivityDetails('${activity.id}')" class="p-1 text-slate-400 hover:text-indigo-600 transition-colors" title="Szczegóły">
-                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="event.stopPropagation(); trackerView.deleteActivity('${activity.id}')" class="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Usuń">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-
-        div.addEventListener('click', () => {
-            this.viewActivityDetails(activity.id);
-        });
-
-        return div;
-    }
-
-    /**
-     * Get activity icon
-     */
-    getActivityIcon(type) {
-        const icons = {
-            work: 'briefcase',
-            break: 'coffee',
-            meeting: 'users',
-            travel: 'map-pin',
-            exercise: 'activity',
-            study: 'book',
-            other: 'circle'
-        };
-
-        return icons[type] || 'circle';
-    }
-
-    /**
-     * Get activity color
-     */
-    getActivityColor(type) {
-        const colors = {
-            work: 'bg-blue-500',
-            break: 'bg-green-500',
-            meeting: 'bg-purple-500',
-            travel: 'bg-orange-500',
-            exercise: 'bg-red-500',
-            study: 'bg-indigo-500',
-            other: 'bg-slate-500'
-        };
-
-        return colors[type] || 'bg-slate-500';
-    }
-
-    /**
-     * Get activity description
-     */
-    getActivityDescription(activity) {
-        const descriptions = {
-            work: 'Praca',
-            break: 'Przerwa',
-            meeting: 'Spotkanie',
-            travel: 'Podróż',
-            exercise: 'Ćwiczenia',
-            study: 'Nauka'
-        };
-
-        return descriptions[activity.type] || activity.type;
-    }
-
-    /**
-     * Render empty activities
-     */
-    renderEmptyActivities(container) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-center">
-                <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                    <i data-lucide="activity" size="28" class="text-slate-300 dark:text-slate-600"></i>
-                </div>
-                <h3 class="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">Brak aktywności</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Rozpocznij śledzenie aktywności</p>
-                <button class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm" onclick="trackerView.startTracking()">
-                    <i data-lucide="play" class="w-4 h-4 inline mr-2"></i>
-                    Rozpocznij śledzenie
-                </button>
-            </div>
-        `;
-
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    }
-
-    /**
-     * Render statistics
-     */
-    renderStatistics(statistics) {
-        if (!this.stats) return;
-
-        const container = this.stats.querySelector('.stats-container');
-        if (!container) return;
-
-        container.innerHTML = `
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
-                        <span class="text-xs text-slate-500">Dziś</span>
-                    </div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white">${statistics.todayActivities || 0}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">Aktywności</div>
-                </div>
-                
-                <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <i data-lucide="clock" class="w-5 h-5 text-green-500"></i>
-                        <span class="text-xs text-slate-500">Dziś</span>
-                    </div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white">${statistics.todayDuration || '0h'}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">Czas trwania</div>
-                </div>
-                
-                <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i>
-                        <span class="text-xs text-slate-500">Tydzień</span>
-                    </div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white">${statistics.weekActivities || 0}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">Aktywności</div>
-                </div>
-                
-                <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <i data-lucide="calendar" class="w-5 h-5 text-orange-500"></i>
-                        <span class="text-xs text-slate-500">Miesiąc</span>
-                    </div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white">${statistics.monthActivities || 0}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">Aktywności</div>
-                </div>
-            </div>
-            
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Typy aktywności</h3>
-                <div class="space-y-2">
-                    ${Object.entries(statistics.activityTypes || {}).map(([type, count]) => 
-                        this.renderActivityType(type, count, statistics.totalActivities || 0)
-                    ).join('')}
-                </div>
-            </div>
-        `;
-
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    }
-
-    /**
-     * Render activity type
-     */
-    renderActivityType(type, count, total) {
-        const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-        const color = this.getActivityColor(type);
-        const description = this.getActivityDescription({ type });
+        let folderClasses = 'case-binder kanban-item';
+        if (caseData.urgent) folderClasses += ' urgent';
+        if (caseData.isFavorite) folderClasses += ' favorite';
 
         return `
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 ${color} rounded-full"></div>
-                    <span class="text-sm text-slate-600 dark:text-slate-400">${description}</span>
+            <div class=\"${folderClasses} flex items-center py-3 pl-3 pr-5 rounded-xl border ${urgentStyle} cursor-pointer\" data-case-no=\"${caseData.no}\" data-case-id=\"${caseData.id}\" data-status=\"${caseData.status || 'new'}\">
+                <div class=\"flex-1 min-w-0\">
+                    <div class=\"flex items-center gap-3\">
+                        <div class=\"font-bold text-slate-800 dark:text-white truncate\">${caseData.no}</div>
+                        <div class=\"text-xs text-slate-400 font-mono\">${caseData.unp || ''}</div>
+                    </div>
+                    <div class=\"text-xs text-slate-500 dark:text-slate-400 mt-1 truncate\">${caseData.debtor || 'Brak danych zobowiązanego'}</div>
+                    ${tagsHTML}
                 </div>
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm font-medium text-slate-800 dark:text-white">${count}</span>
-                    <span class="text-xs text-slate-500">${percentage}%</span>
+                <div class=\"flex items-center gap-2 text-xs text-right ml-2 justify-end\">
+                    <div class=\"w-28\">
+                        <div class=\"font-bold text-slate-600 dark:text-slate-300\">${new Date(caseData.date).toLocaleDateString()}</div>
+                        <div class=\"text-[10px] font-bold ${deadlineColor}\">${deadlineText}</div>
+                        ${caseData.deadline ? `<div class=\"text-[9px] text-slate-500\">Termin: ${new Date(caseData.deadline).toLocaleDateString()}</div>` : ''}
+                    </div>
+                    <div class=\"tracker-status-badge w-20 text-xs font-bold rounded bg-slate-50 dark:bg-opacity-20 text-slate-600\">${statusLabels[caseData.status] || 'Nowa'}</div>
+                    <div class=\"flex items-center gap-1 icon-container\">
+                        <div class=\"icon-wrapper\">${favoriteIcon}</div>
+                    </div>
                 </div>
             </div>
         `;
     }
 
     /**
-     * Set tracking state
+     * Toggle favorite
      */
-    setTrackingState(active) {
-        const startBtn = document.getElementById('startTrackingBtn');
-        const stopBtn = document.getElementById('stopTrackingBtn');
-        const status = document.getElementById('trackingStatus');
-
-        if (startBtn) {
-            startBtn.disabled = active;
-            startBtn.classList.toggle('hidden', active);
-        }
-
-        if (stopBtn) {
-            stopBtn.disabled = !active;
-            stopBtn.classList.toggle('hidden', !active);
-        }
-
-        if (status) {
-            status.innerHTML = active 
-                ? '<span class="text-green-600"><i data-lucide="activity" class="w-4 h-4 inline mr-1"></i>Aktywne</span>'
-                : '<span class="text-slate-500"><i data-lucide="circle" class="w-4 h-4 inline mr-1"></i>Gotowe</span>';
-        }
-
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    }
-
-    /**
-     * Set loading state
-     */
-    setLoading(loading) {
-        const exportBtn = document.getElementById('exportTrackerDataBtn');
-        if (exportBtn) {
-            exportBtn.disabled = loading;
-            exportBtn.innerHTML = loading 
-                ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i>Eksportowanie...'
-                : '<i data-lucide="download" class="w-4 h-4 mr-2"></i>Eksportuj dane';
-        }
-
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    }
-
-    /**
-     * View activity details
-     */
-    viewActivityDetails(activityId) {
-        // This would show a modal with activity details
-        console.log('Viewing activity details:', activityId);
-    }
-
-    /**
-     * Delete activity
-     */
-    async deleteActivity(activityId) {
+    async toggleFavorite(caseId) {
         try {
-            if (!confirm('Czy na pewno usunąć tę aktywność?')) return;
-
-            await TrackerStore.deleteActivity(activityId);
-
-            store.commit('ADD_NOTIFICATION', {
-                type: 'success',
-                message: 'Aktywność usunięta'
-            });
+            await TrackerStore.toggleFavorite(caseId);
         } catch (error) {
-            console.error('[TrackerView] Delete activity error:', error);
-            store.commit('ADD_NOTIFICATION', {
-                type: 'error',
-                message: 'Błąd usuwania aktywności'
-            });
+            console.error('[TrackerView] Toggle favorite error:', error);
         }
     }
 
     /**
-     * Get tracking status
+     * Open case
      */
-    getTrackingStatus() {
-        const active = store.get('trackerActive') || false;
-        const activities = store.get('trackerActivities') || [];
-        
-        return {
-            active,
-            totalActivities: activities.length,
-            todayActivities: activities.filter(a => {
-                const today = new Date().toDateString();
-                return new Date(a.timestamp).toDateString() === today;
-            }).length
-        };
+    openCase(caseId) {
+        // This would open case detail modal/view
+        console.log('Opening case:', caseId);
+        store.commit('ADD_NOTIFICATION', {
+            type: 'info',
+            message: `Otwieranie sprawy #${caseId} - szczegóły do zaimplementowania`
+        });
+    }
+
+    /**
+     * Destroy view
+     */
+    destroy() {
+        console.log('[TrackerView] Destroying...');
+        this.container = null;
+        this.trackerList = null;
     }
 }
 
