@@ -7,6 +7,8 @@ import store from '../../store/index.js';
 // Add AI state
 if (!store.state.aiApiKey) store.state.aiApiKey = null;
 if (!store.state.aiHistory) store.state.aiHistory = [];
+if (!store.state.aiMessages) store.state.aiMessages = [];
+if (typeof store.state.aiLoading === 'undefined') store.state.aiLoading = false;
 if (!store.state.pdfList) store.state.pdfList = [];
 
 // Mutations
@@ -15,14 +17,22 @@ store.registerMutation('SET_AI_API_KEY', (state, apiKey) => {
 });
 
 store.registerMutation('ADD_AI_MESSAGE', (state, message) => {
-    state.aiHistory.push({
+    const entry = {
         ...message,
-        timestamp: new Date().toISOString()
-    });
+        timestamp: message.timestamp || new Date().toISOString()
+    };
+    state.aiHistory.push(entry);
+    // Keep aiMessages (used by AIView) in sync with history
+    state.aiMessages = state.aiHistory.slice();
 });
 
 store.registerMutation('CLEAR_AI_HISTORY', (state) => {
     state.aiHistory = [];
+    state.aiMessages = [];
+});
+
+store.registerMutation('SET_AI_LOADING', (state, loading) => {
+    state.aiLoading = !!loading;
 });
 
 store.registerMutation('SET_PDF_LIST', (state, pdfList) => {
@@ -256,7 +266,70 @@ store.registerAction('loadApiKey', ({ commit }) => {
 // Initialize API key on module load
 store.dispatch('loadApiKey');
 
+// --- Helper functions used by AIView ---
+
+async function sendChatMessage(message) {
+    const text = (message || '').trim();
+    if (!text) return null;
+
+    // Add user message to history
+    store.commit('ADD_AI_MESSAGE', {
+        role: 'user',
+        content: text
+    });
+
+    store.commit('SET_AI_LOADING', true);
+
+    try {
+        const prompt = `Jesteś asystentem prawnym. Odpowiadaj po polsku, jasno i konkretnie.\n\nPytanie:\n${text}`;
+
+        const payload = {
+            contents: [{
+                parts: [{ text: prompt }]
+            }]
+        };
+
+        const result = await store.dispatch('callGemini', { payload });
+
+        const aiMessage = {
+            role: 'assistant',
+            content: result
+        };
+
+        store.commit('ADD_AI_MESSAGE', aiMessage);
+
+        return aiMessage;
+    } finally {
+        store.commit('SET_AI_LOADING', false);
+    }
+}
+
+function clearMessages() {
+    store.commit('CLEAR_AI_HISTORY');
+}
+
+function loadMessages() {
+    // Ensure aiMessages is at least an empty array
+    const messages = store.get('aiMessages') || [];
+    // Trigger subscribers explicitly (even if already set)
+    store.commit('SET_AI_MESSAGES', messages);
+    return messages;
+}
+
+async function saveApiKey(apiKey) {
+    await store.dispatch('setApiKey', apiKey);
+}
+
+async function processText(text) {
+    const content = (text || '').trim();
+    if (!content) return null;
+
+    const prompt = 'Przetwórz ten tekst, podsumuj kluczowe informacje i wypunktuj najważniejsze rzeczy po polsku.';
+    return store.dispatch('analyzeText', { text: content, prompt });
+}
+
 export default {
+    // Low-level API
     analyzeText: (text, prompt) => store.dispatch('analyzeText', { text, prompt }),
     analyzeImage: (base64Image, prompt) => store.dispatch('analyzeImage', { base64Image, prompt }),
     processPdf: (file) => store.dispatch('processPdf', file),
@@ -267,5 +340,12 @@ export default {
     loadApiKey: () => store.dispatch('loadApiKey'),
     clearHistory: () => store.commit('CLEAR_AI_HISTORY'),
     getHistory: () => store.get('aiHistory'),
-    getPdfList: () => store.get('pdfList')
+    getPdfList: () => store.get('pdfList'),
+
+    // High-level API used by AIView
+    sendMessage: (message) => sendChatMessage(message),
+    clearMessages: () => clearMessages(),
+    loadMessages: () => loadMessages(),
+    saveApiKey: (apiKey) => saveApiKey(apiKey),
+    processText: (text) => processText(text)
 };
