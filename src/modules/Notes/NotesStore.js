@@ -13,6 +13,26 @@ store.registerMutation('SET_NOTES', (state, notes) => {
     state.notes = notes;
 });
 
+// Id-based helpers built on top of existing actions
+store.registerAction('createNote', async ({ dispatch }, noteData) => {
+    // Delegate to existing saveNote, which handles id/date generation
+    return dispatch('saveNote', noteData);
+});
+
+store.registerAction('updateNote', async ({ dispatch }, { id, data }) => {
+    // Reuse saveNote update path
+    return dispatch('saveNote', { ...data, id });
+});
+
+store.registerAction('selectNote', async ({ commit }, noteId) => {
+    commit('SET_ACTIVE_NOTE', noteId);
+    return noteId;
+});
+
+store.registerAction('removeNote', async ({ dispatch }, noteId) => {
+    return dispatch('deleteNote', noteId);
+});
+
 store.registerMutation('SET_ACTIVE_NOTE', (state, noteId) => {
     state.activeNoteId = noteId;
 });
@@ -83,7 +103,14 @@ store.registerAction('deleteNote', async ({ commit, state }, noteId) => {
 });
 
 export default {
+    // Core id-based API used by NotesView
     load: () => store.dispatch('loadNotes'),
+    create: (note) => store.dispatch('createNote', note),
+    update: (id, data) => store.dispatch('updateNote', { id, data }),
+    select: (id) => store.dispatch('selectNote', id),
+    remove: (id) => store.dispatch('removeNote', id),
+
+    // Backward-compatible helpers
     save: (note) => store.dispatch('saveNote', note),
     delete: (id) => store.dispatch('deleteNote', id)
 };
