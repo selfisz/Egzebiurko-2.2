@@ -20,6 +20,7 @@ import securityModule from './modules/Security/index.js';
 import globalSearchModule from './modules/GlobalSearch/index.js';
 import terrainModule from './modules/Terrain/index.js';
 import trackerModule from './modules/tracker/index.js';
+import testModule from './modules/TestModule/index.js';
 
 console.log('[App] Starting Egzebiurko 3.0...');
 
@@ -59,6 +60,7 @@ async function initApp() {
         globalSearchModule.init();
         terrainModule.init();
         trackerModule.init();
+        testModule.init(); // TEST MODULE - powinien pokazać alert
         
         // Export views to window for legacy HTML compatibility
         window.terrainView = terrainModule.view;
