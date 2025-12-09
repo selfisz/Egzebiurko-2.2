@@ -317,3 +317,42 @@ Kolejność według trudności (od najłatwiejszych):
 **Wniosek:** Projekt jest w świetnym stanie. Idziemy w dobrą stronę. Refaktoring jest dobrze zaplanowany i wykonalny. Kluczowe funkcje działają. Możemy kontynuować zgodnie z planem.
 
 **Następny krok:** Zacznij od modułu **Registry** - najprostszy, szybki sukces, buduje momentum! 🚀
+
+---
+
+## 🔄 AKTUALIZACJA STANU – 9 grudnia 2025
+
+### ✅ Co się zmieniło od ostatniej inwentaryzacji
+
+- **Produkcja (legacy js/)**
+  - Nadal 100% funkcjonalna, bez zmian w zachowaniu modułów.
+
+- **Refaktoring (src/)**
+  - **Terrain** – zmigrowany do ES6, działa w DEV:
+    - `TerrainStore` + `TerrainView` + `index.js`.
+    - Integracja z `AppController` i `src/main.js`.
+    - Eksport `window.terrainView` dla legacy HTML.
+  - **Tracker** – zmigrowany do ES6, działa w DEV:
+    - `TrackerStore` oparty o store `cases` w IndexedDB.
+    - Nowy `TrackerView` z widokiem Kanban (Nowe / W toku / Pilne), filtrami i licznikami.
+    - Integracja z `AppController` i `src/main.js`.
+    - Eksport `window.trackerView` dla legacy HTML.
+  - **Security, QuickActions** – nadal 100% ukończone w ES6 (Store + View).
+  - **Generator** – rozpoczęte planowanie nowego UI (templates/projects) z zachowaniem pipeline'u `.docx` (PizZip + Docxtemplater) i zgodności z legacy `templates`/`drafts`. Implementacja zmian w toku.
+  - Pozostałe moduły (Registry, Finance, Cars, AI, Statistics, GlobalSearch, Notes, Links) – status zgodny z sekcją powyżej (struktura gotowa, część Store/View do domknięcia).
+
+### 📌 Stan na dziś (DEV)
+
+- **Architektura:** bez zmian, stabilna (Store, BaseView, AppController, PerformanceMonitor).
+- **Moduły w pełni działające w DEV (ES6):**
+  - QuickActions
+  - Security
+  - Terrain
+  - Tracker
+- **Moduły częściowo gotowe:**
+  - Notes, Links – Store gotowy, View do dopięcia.
+  - Registry, Finance, Cars, AI, Statistics, GlobalSearch, Generator – struktura + część logiki, brak pełnego UI.
+
+### 🎯 Wniosek 2025-12-09
+
+Projekt utrzymuje stabilny stan, a kluczowe moduły terenowe i terminarz (Terrain, Tracker) są już dostępne w nowej architekturze ES6 w środowisku DEV, przy pełnej kompatybilności z legacy produkcją. Kolejne kroki to dokończenie prostszych modułów (Registry, Finance, AI, Cars) oraz wdrożenie nowego Generatora opartego o `.docx`.

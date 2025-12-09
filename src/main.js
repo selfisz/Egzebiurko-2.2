@@ -63,6 +63,15 @@ async function initApp() {
         // Export views to window for legacy HTML compatibility
         window.terrainView = terrainModule.view;
         window.trackerView = trackerModule.view;
+
+        // Legacy Notes HTML (views_bundle.js) używa globalnych funkcji
+        // newNote/saveNote/deleteNote/filterNotes. Przekierowujemy je
+        // na ES6 NotesView, aby korzystała z NotesStore i głównego store'a.
+        window.notesView = notesModule.view;
+        window.newNote = () => notesModule.view.createNewNote();
+        window.saveNote = () => notesModule.view.saveCurrentNote();
+        window.deleteNote = () => notesModule.view.deleteCurrentNote();
+        window.filterNotes = (query) => notesModule.view.filterNotes(query || '');
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');

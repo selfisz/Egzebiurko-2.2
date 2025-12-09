@@ -428,11 +428,54 @@ class GlobalSearchView {
      * Navigate to result
      */
     navigateToResult(result) {
-        // This would integrate with the routing system
-        console.log('Navigating to result:', result);
-        
-        // For now, just copy the result content
-        this.copyResult(result.id);
+        try {
+            // 1. Specjalna obsługa znanych modułów (tracker, cars)
+            if (typeof goToModule === 'function' && result.module) {
+                // Tracker: przejdź do modułu i otwórz sprawę
+                if (result.module === 'tracker' && result.id != null) {
+                    goToModule('tracker');
+                    setTimeout(() => {
+                        if (window.trackerModule && typeof window.trackerModule.openCase === 'function') {
+                            window.trackerModule.openCase(result.id);
+                        }
+                    }, 150);
+                    return;
+                }
+
+                // Cars: przejdź do modułu i otwórz pojazd
+                if (result.module === 'cars' && result.id != null) {
+                    goToModule('cars');
+                    setTimeout(() => {
+                        if (typeof window.openCar === 'function') {
+                            window.openCar(result.id);
+                        } else if (window.carsModule && typeof window.carsModule.openCar === 'function') {
+                            window.carsModule.openCar(result.id);
+                        }
+                    }, 150);
+                    return;
+                }
+
+                // Inne moduły: tylko przełącz moduł
+                goToModule(result.module);
+                return;
+            }
+
+            // 2. Fallback: użyj URL jeśli dostępny
+            if (result.url) {
+                if (result.url.startsWith('#')) {
+                    window.location.hash = result.url;
+                } else {
+                    window.location.href = result.url;
+                }
+                return;
+            }
+
+            // 3. Ostateczność: skopiuj wynik do schowka
+            this.copyResult(result.id);
+        } catch (error) {
+            console.error('[GlobalSearchView] navigateToResult error:', error);
+            this.copyResult(result.id);
+        }
     }
 
     /**

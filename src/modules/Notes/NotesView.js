@@ -20,8 +20,20 @@ class NotesView {
         
         // Get DOM elements - may not exist if module not loaded yet
         this.container = document.getElementById('notesList');
-        this.searchInput = document.getElementById('notesSearch');
-        this.editor = document.getElementById('notesEditor');
+
+        // W legacy HTML pole wyszukiwania nie ma ID, więc obsługę
+        // zapewniamy przez globalną funkcję filterNotes (podłączoną w main.js).
+        this.searchInput = null;
+
+        const editorContainer = document.getElementById('noteEditor');
+        this.editor = {
+            container: editorContainer,
+            title: document.getElementById('noteTitle'),
+            content: document.getElementById('noteContent'),
+            deleteBtn: null,
+            saveBtn: null,
+            newBtn: null
+        };
         
         // Only setup if container exists (module is loaded)
         if (!this.container) {
@@ -42,32 +54,6 @@ class NotesView {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Search functionality
-        if (this.searchInput) {
-            this.searchInput.addEventListener('input', (e) => {
-                this.filterNotes(e.target.value);
-            });
-        }
-
-        // Editor controls
-        if (this.editor.newBtn) {
-            this.editor.newBtn.addEventListener('click', () => {
-                this.createNewNote();
-            });
-        }
-
-        if (this.editor.saveBtn) {
-            this.editor.saveBtn.addEventListener('click', () => {
-                this.saveCurrentNote();
-            });
-        }
-
-        if (this.editor.deleteBtn) {
-            this.editor.deleteBtn.addEventListener('click', () => {
-                this.deleteCurrentNote();
-            });
-        }
-
         // Auto-save on content change
         if (this.editor.content) {
             this.editor.content.addEventListener('input', () => {
