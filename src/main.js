@@ -72,6 +72,34 @@ async function initApp() {
         window.saveNote = () => notesModule.view.saveCurrentNote();
         window.deleteNote = () => notesModule.view.deleteCurrentNote();
         window.filterNotes = (query) => notesModule.view.filterNotes(query || '');
+
+        // Bridges for GlobalSearch navigation
+        // If legacy goToModule is available (from js/ui.js), GlobalSearch will
+        // use it. Otherwise provide a minimal fallback based on hash routing.
+        if (typeof window.goToModule !== 'function') {
+            window.goToModule = (moduleName) => {
+                window.location.hash = `#${moduleName}`;
+            };
+        }
+
+        // Tracker: expose openCase for GlobalSearch when legacy trackerModule
+        // is not attached to window.
+        if (!window.trackerModule) {
+            window.trackerModule = {
+                openCase: (caseId) => trackerModule.view.openCase(caseId)
+            };
+        }
+
+        // Cars: GlobalSearch expects window.openCar or window.carsModule.openCar.
+        // Bridge both to the ES6 CarsView implementation.
+        if (!window.carsModule) {
+            window.carsModule = {
+                openCar: (carId) => carsModule.carsView.openCarDetails(carId)
+            };
+        }
+        if (typeof window.openCar !== 'function') {
+            window.openCar = (carId) => carsModule.carsView.openCarDetails(carId);
+        }
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');
