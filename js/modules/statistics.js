@@ -20,7 +20,13 @@ async function generateStatistics() {
 }
 
 async function getCasesStatistics() {
-    const cases = await state.db.getAll('cases');
+    let cases = [];
+    if (state.db.objectStoreNames.contains('tracker')) {
+        cases = await state.db.getAll('tracker');
+    } else if (state.db.objectStoreNames.contains('cases')) {
+        cases = await state.db.getAll('cases');
+    }
+
     const now = new Date();
     
     return {
@@ -82,8 +88,13 @@ async function getNotesStatistics() {
 }
 
 function getTerrainStatistics() {
-    const terrainCases = JSON.parse(localStorage.getItem('lex_terrain_cases') || '[]');
-    
+    // Try to get from localStorage first (legacy)
+    let terrainCases = [];
+    try {
+        const local = localStorage.getItem('lex_terrain_cases');
+        if (local) terrainCases = JSON.parse(local);
+    } catch (e) {}
+
     return {
         total: terrainCases.length,
         withDebt: terrainCases.filter(tc => tc.debtAmount && parseFloat(tc.debtAmount) > 0).length,
