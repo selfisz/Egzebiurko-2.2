@@ -74,32 +74,33 @@ async function initApp() {
         window.filterNotes = (query) => notesModule.view.filterNotes(query || '');
 
         // Bridges for GlobalSearch navigation
-        // If legacy goToModule is available (from js/ui.js), GlobalSearch will
-        // use it. Otherwise provide a minimal fallback based on hash routing.
+        // Always override/provide these functions so ES6 GlobalSearch can navigate properly.
+        // Legacy goToModule from js/ui.js will be used if available, otherwise fallback.
         if (typeof window.goToModule !== 'function') {
             window.goToModule = (moduleName) => {
                 window.location.hash = `#${moduleName}`;
             };
         }
 
-        // Tracker: expose openCase for GlobalSearch when legacy trackerModule
-        // is not attached to window.
-        if (!window.trackerModule) {
-            window.trackerModule = {
-                openCase: (caseId) => trackerModule.view.openCase(caseId)
-            };
-        }
+        // Tracker: ALWAYS expose openCase for GlobalSearch, overriding legacy if needed.
+        // This ensures ES6 GlobalSearch can open cases via ES6 TrackerView.
+        window.trackerModule = window.trackerModule || {};
+        window.trackerModule.openCase = (caseId) => {
+            console.log('[Bridge] Opening case via ES6 TrackerView:', caseId);
+            trackerModule.view.openCase(caseId);
+        };
 
-        // Cars: GlobalSearch expects window.openCar or window.carsModule.openCar.
-        // Bridge both to the ES6 CarsView implementation.
-        if (!window.carsModule) {
-            window.carsModule = {
-                openCar: (carId) => carsModule.carsView.openCarDetails(carId)
-            };
-        }
-        if (typeof window.openCar !== 'function') {
-            window.openCar = (carId) => carsModule.carsView.openCarDetails(carId);
-        }
+        // Cars: ALWAYS expose openCar for GlobalSearch, overriding legacy if needed.
+        // This ensures ES6 GlobalSearch can open car details via ES6 CarsView.
+        window.carsModule = window.carsModule || {};
+        window.carsModule.openCar = (carId) => {
+            console.log('[Bridge] Opening car via ES6 CarsView:', carId);
+            carsModule.carsView.openCarDetails(carId);
+        };
+        window.openCar = (carId) => {
+            console.log('[Bridge] Opening car via ES6 CarsView (direct):', carId);
+            carsModule.carsView.openCarDetails(carId);
+        };
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');
