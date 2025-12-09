@@ -17,6 +17,20 @@ store.registerMutation('SET_STATISTICS_DATA', (state, data) => {
     state.statistics = data;
 });
 
+// Thin helpers for views - reuse generateStatistics
+store.registerAction('loadStatistics', async ({ dispatch }) => {
+    return dispatch('generateStatistics');
+});
+
+store.registerAction('updateStatistics', async ({ dispatch }, dateRange) => {
+    // dateRange is currently ignored; full range support can be added later
+    return dispatch('generateStatistics');
+});
+
+store.registerAction('refreshStatistics', async ({ dispatch }) => {
+    return dispatch('generateStatistics');
+});
+
 store.registerMutation('SET_STATISTICS_LOADING', (state, loading) => {
     state.statisticsLoading = loading;
 });
@@ -72,7 +86,8 @@ store.registerAction('generateStatistics', async ({ commit, state }) => {
 
         // PDF
 
-        const statistics = {
+        // Base statistics used for exports and raw data
+        const baseStatistics = {
             cases: {
                 total: cases.length,
                 thisMonth: casesThisMonth,
@@ -95,6 +110,56 @@ store.registerAction('generateStatistics', async ({ commit, state }) => {
                 totalPages: pdfs.reduce((sum, pdf) => sum + (pdf.pages || 0), 0)
             },
             generated: today.toISOString()
+        };
+
+        // View-friendly aggregates expected by StatisticsView
+        const overview = {
+            totalCases: baseStatistics.cases.total,
+            newCases: baseStatistics.cases.thisMonth,
+            // Placeholder fields for future extensions
+            totalClients: 0,
+            newClients: 0,
+            growthRate: 0,
+            // Use total car value as simple "revenue" proxy for now
+            revenue: baseStatistics.cars.totalValue || 0,
+            avgTime: 0,
+            efficiency: 0
+        };
+
+        const casesView = {
+            // Keep all original fields for CSV export and compatibility
+            ...baseStatistics.cases,
+            // Additional fields used by StatisticsView
+            active: baseStatistics.cases.total,
+            completed: 0,
+            pending: 0,
+            types: baseStatistics.cases.byStatus || {}
+        };
+
+        const finance = {
+            income: 0,
+            expenses: 0,
+            profit: 0,
+            margin: 0
+        };
+
+        const performance = {
+            avgCaseTime: 0,
+            casesPerWeek: 0,
+            successRate: 0,
+            notesCount: baseStatistics.notes.total,
+            documentsCount: baseStatistics.pdf.total,
+            tasksCount: 0
+        };
+
+        const statistics = {
+            ...baseStatistics,
+            overview,
+            // Override cases with enriched version that still contains
+            // all original properties used by exportStatistics
+            cases: casesView,
+            finance,
+            performance
         };
 
         commit('SET_STATISTICS_DATA', statistics);
