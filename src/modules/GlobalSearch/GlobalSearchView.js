@@ -21,9 +21,14 @@ class GlobalSearchView {
         console.log('[GlobalSearchView] Initializing...');
         
         // Get DOM elements
-        this.container = document.getElementById('globalSearchContainer');
+        // In current HTML we reuse the legacy search modal structure:
+        // - Modal overlay: #searchModal
+        // - Input:        #globalSearchInput
+        // - Results box:  #searchResults
+        this.container = document.getElementById('searchModal');
         this.searchInput = document.getElementById('globalSearchInput');
-        this.resultsContainer = document.getElementById('globalSearchResults');
+        this.resultsContainer = document.getElementById('searchResults');
+        // Optional filters / loading elements (not yet present in legacy HTML)
         this.filters = document.getElementById('globalSearchFilters');
         this.loading = document.getElementById('globalSearchLoading');
 
