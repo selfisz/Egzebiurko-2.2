@@ -22,7 +22,7 @@ import terrainModule from './modules/Terrain/index.js';
 import trackerModule from './modules/tracker/index.js';
 import testModule from './modules/TestModule/index.js';
 
-console.log('[App] Starting Egzebiurko 3.0...');
+console.log('[App] Starting Egzebiurko 3.0 (SRC Mode)...');
 
 /**
  * Inicjalizacja aplikacji
@@ -67,8 +67,6 @@ async function initApp() {
         window.trackerView = trackerModule.view;
 
         // Legacy Notes HTML (views_bundle.js) używa globalnych funkcji
-        // newNote/saveNote/deleteNote/filterNotes. Przekierowujemy je
-        // na ES6 NotesView, aby korzystała z NotesStore i głównego store'a.
         window.notesView = notesModule.view;
         window.newNote = () => notesModule.view.createNewNote();
         window.saveNote = () => notesModule.view.saveCurrentNote();
@@ -76,24 +74,75 @@ async function initApp() {
         window.filterNotes = (query) => notesModule.view.filterNotes(query || '');
 
         // Bridges for GlobalSearch navigation
-        // Always override/provide these functions so ES6 GlobalSearch can navigate properly.
-        // Legacy goToModule from js/ui.js will be used if available, otherwise fallback.
-        if (typeof window.goToModule !== 'function') {
-            window.goToModule = (moduleName) => {
-                window.location.hash = `#${moduleName}`;
-            };
-        }
+        // Re-implement goToModule directly to ensure it works in SRC mode
+        window.goToModule = (moduleName, options = {}) => {
+            window.location.hash = `#${moduleName}`;
 
-        // Tracker: ALWAYS expose openCase for GlobalSearch, overriding legacy if needed.
-        // This ensures ES6 GlobalSearch can open cases via ES6 TrackerView.
+            // Update active nav state
+            document.querySelectorAll('[id^="nav-"]').forEach(btn => {
+                btn.classList.remove('bg-white/10', 'text-white');
+            });
+            const activeBtn = document.getElementById(`nav-${moduleName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white/10', 'text-white');
+            }
+
+            // Load view logic if needed (handled by hashchange usually, but explicit call helps)
+            // Note: hashchange listener in js/loader.js handles the actual view injection
+
+            // Handle options
+            if (options.caseId && window.trackerModule && window.trackerModule.openCase) {
+                setTimeout(() => window.trackerModule.openCase(options.caseId), 100);
+            }
+        };
+
+        // UI Helpers
+        window.toggleSearch = () => {
+             const modal = document.getElementById('searchModal');
+             if (modal) {
+                 modal.classList.toggle('hidden');
+                 if (!modal.classList.contains('hidden')) {
+                     setTimeout(() => document.getElementById('globalSearchInput')?.focus(), 50);
+                 }
+             }
+        };
+
+        window.closeGlobalSearch = () => {
+             const modal = document.getElementById('searchModal');
+             if (modal) modal.classList.add('hidden');
+        };
+
+        // --- GLOBAL SEARCH BRIDGE ---
+        window.runGlobalSearch = (query) => {
+             // Sync input if called from oninput="runGlobalSearch(this.value)"
+             const input = document.getElementById('globalSearchInput');
+             if (input && input.value !== query) {
+                 input.value = query;
+             }
+             // Trigger search in module
+             // Using view's debounce or direct search
+             if (globalSearchModule.view) {
+                 globalSearchModule.view.debounceSearch(query);
+             }
+        };
+
+        // Tracker Bridges
         window.trackerModule = window.trackerModule || {};
         window.trackerModule.openCase = (caseId) => {
             console.log('[Bridge] Opening case via ES6 TrackerView:', caseId);
             trackerModule.view.openCase(caseId);
         };
+        // Ensure other tracker functions used in HTML are available
+        // Example: toggleTodayQuickPlan is called in index.html header
+        window.trackerModule.toggleTodayQuickPlan = () => trackerModule.view.toggleTodayQuickPlan();
+        window.trackerModule.closeDayPlanModal = () => trackerModule.view.closeDayPlanModal();
+        window.trackerModule.addTaskFromModal = () => trackerModule.view.addTaskFromModal();
+        window.trackerModule.addReminderFromModal = () => trackerModule.view.addReminderFromModal();
+        // Bridge legacy render functions if used by loader
+        window.trackerModule.initTracker = () => trackerModule.view.render();
 
-        // Cars: ALWAYS expose openCar for GlobalSearch, overriding legacy if needed.
-        // This ensures ES6 GlobalSearch can open car details via ES6 CarsView.
+
+        // Cars Bridges
         window.carsModule = window.carsModule || {};
         window.carsModule.openCar = (carId) => {
             console.log('[Bridge] Opening car via ES6 CarsView:', carId);
@@ -103,6 +152,9 @@ async function initApp() {
             console.log('[Bridge] Opening car via ES6 CarsView (direct):', carId);
             carsModule.carsView.openCarDetails(carId);
         };
+        // Loader hook
+        window.loadGarage = () => carsModule.carsView.renderCarsList();
+
         
         // 4. Setup UI
         console.log('[App] Setting up UI...');
@@ -116,7 +168,7 @@ async function initApp() {
         // Notify user
         store.commit('ADD_NOTIFICATION', {
             type: 'success',
-            message: 'Aplikacja załadowana pomyślnie!'
+            message: 'Aplikacja załadowana pomyślnie (SRC)!'
         });
         
     } catch (error) {
@@ -152,12 +204,124 @@ function setupUI() {
     
     // Global keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        // Escape - zamknij modals
+        // Escape - close modals
         if (e.key === 'Escape') {
             closeAllModals();
+            window.closeGlobalSearch();
+            document.getElementById('notifPopover')?.classList.add('hidden');
+        }
+
+        // Ctrl+K / Cmd+K - Global Search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            window.toggleSearch();
+        }
+    });
+
+    // Routing - Handle Back/Forward buttons
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.substring(1) || 'dashboard';
+        // Only load if not already active (optional optimization, but loader handles it)
+        if (typeof window.loadView === 'function') {
+            window.loadView(hash);
+
+            // Update sidebar active state
+            document.querySelectorAll('[id^="nav-"]').forEach(btn => {
+                btn.classList.remove('bg-white/10', 'text-white');
+            });
+            const activeBtn = document.getElementById(`nav-${hash}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white/10', 'text-white');
+            }
         }
     });
     
+    // Initial Route
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        const hash = window.location.hash.substring(1) || 'dashboard';
+        if (typeof window.goToModule === 'function') {
+            window.goToModule(hash);
+        }
+    }
+
+    // PDF Worker
+    if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Legacy Edit Modes (Sidebar/Dashboard)
+    window.toggleSidebarEditMode = () => {
+        // Simple toggle for now, full sortable logic requires SortableJS loaded
+        const btn = document.getElementById('edit-sidebar-btn');
+        if (btn) {
+            const isEditing = btn.textContent.includes('Zapisz');
+            if (isEditing) {
+                btn.innerHTML = '<i data-lucide="move" size="14"></i> Edytuj';
+                btn.classList.remove('text-green-500');
+                // Save logic would go here
+            } else {
+                btn.innerHTML = '<i data-lucide="check" size="14"></i> Zapisz';
+                btn.classList.add('text-green-500');
+                // Init sortable if available
+                if (window.Sortable) {
+                     new Sortable(document.getElementById('module-list'), {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: function (evt) {
+                            const order = Array.from(document.getElementById('module-list').children).map(item => item.dataset.moduleId);
+                            localStorage.setItem('sidebarOrder', JSON.stringify(order));
+                        }
+                    });
+                }
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+    };
+
+    window.toggleDashboardEditMode = () => {
+        const grid = document.getElementById('dashboard-grid');
+        const btn = document.getElementById('edit-dashboard-btn');
+        if (!grid || !btn) return;
+
+        const isEditing = grid.classList.contains('edit-mode');
+        if (isEditing) {
+            btn.innerHTML = '<i data-lucide="move" class="inline-block mr-2"></i> Edytuj układ';
+            btn.classList.remove('bg-green-500', 'text-white');
+            grid.classList.remove('edit-mode');
+        } else {
+            btn.innerHTML = '<i data-lucide="check" class="inline-block mr-2"></i> Zapisz układ';
+            btn.classList.add('bg-green-500', 'text-white');
+            grid.classList.add('edit-mode');
+
+            if (window.Sortable) {
+                new Sortable(grid, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) {
+                        const order = Array.from(grid.children).map(item => item.dataset.moduleId);
+                        localStorage.setItem('dashboardOrder', JSON.stringify(order));
+                    }
+                });
+            }
+        }
+        if (window.lucide) lucide.createIcons();
+    };
+
+    // Apply saved sidebar order on load
+    try {
+        const savedOrder = JSON.parse(localStorage.getItem('sidebarOrder'));
+        if (savedOrder) {
+            const moduleList = document.getElementById('module-list');
+            if (moduleList) {
+                const items = Array.from(moduleList.children);
+                const sortedItems = savedOrder.map(id => items.find(item => item.dataset.moduleId === id)).filter(Boolean);
+                sortedItems.forEach(item => moduleList.appendChild(item));
+                // Append any new items not in saved order
+                items.filter(item => !sortedItems.includes(item)).forEach(item => moduleList.appendChild(item));
+            }
+        }
+    } catch (e) { console.error('Sidebar order error', e); }
+
     // Subscribe to notifications
     store.subscribe('notifications', (notifications) => {
         renderNotifications(notifications);
