@@ -1,9 +1,6 @@
-// --- ENVIRONMENT DETECTION ---
-// Treat only specific localhost ports as DEV (where /src/* is available via Vite),
-// everything else (including Vite preview on 4173 and Vercel) = PROD (no /src/* imports).
-const DEV_PORTS = ['3000', '8080'];
-const IS_DEV_ENV = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    && DEV_PORTS.includes(window.location.port);
+// Main App Entry Point (LEGACY)
+// Uwaga: Aplikacja działa wyłącznie na kodzie z folderu /js (legacy).
+// Folder /src jest odłączony i służy tylko jako magazyn/archiwum.
 
 // --- ROUTING ---
 window.addEventListener('hashchange', handleRouteChange);
@@ -66,20 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function startApp() {
-    // In DEV (localhost:3000/8080) load modular store from /src so refactoring działa w pełni.
-    // W PREVIEW/PROD (inne porty/hosty) pomijamy to, bo /src/* nie jest dostępne po buildzie.
-    if (IS_DEV_ENV) {
-        try {
-            const { default: store } = await import('../src/store/index.js');
-            window.store = store;
-            console.log('[Main] ✅ Store loaded and globally available (DEV)');
-        } catch (error) {
-            console.error('[Main] ❌ Failed to load store in DEV mode:', error);
-        }
-    } else {
-        console.log('[Main] Skipping modular store load (non-DEV env, legacy only).');
-    }
-
+    // Legacy-only start: nie korzystamy z /src ani modułowego store.
     await initDB();
     
     handleRouteChange(); // Initial route handler
@@ -122,77 +106,6 @@ async function startApp() {
     // Inicjalizuj moduł bezpieczeństwa (jeśli włączony)
     if (typeof securityModule !== 'undefined' && localStorage.getItem('security_enabled') === 'true') {
         securityModule.init();
-    }
-    
-    // LOAD APPCONTROLLER AFTER LEGACY INITIALIZATION
-    // Changed: Always load ES6 modules, not just in DEV
-    console.log('[Main] Starting modular architecture load...');
-    setTimeout(() => loadModularArchitecture(), 1000);
-}
-
-// Function to load AppController after legacy code is ready
-// Changed: Always load, not just in DEV
-async function loadModularArchitecture() {
-    try {
-        console.log('[Main] Loading AppController...');
-        
-        // Commit database to store if available
-        if (window.store && state.db) {
-            window.store.commit('SET_DB', state.db);
-            console.log('[Main] ✅ Database committed to store');
-        }
-        
-        // Load AppController using dynamic script injection
-        const loadModule = async (modulePath) => {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.type = 'module';
-                script.textContent = `
-                    try {
-                        import module from '${modulePath}';
-                        window.__tempModule = module;
-                    } catch (err) {
-                        console.error('[Module Load Error]:', err);
-                        window.__tempModuleError = err;
-                    }
-                `;
-                script.onload = () => {
-                    if (window.__tempModuleError) {
-                        reject(window.__tempModuleError);
-                        delete window.__tempModuleError;
-                    } else {
-                        resolve(window.__tempModule);
-                    }
-                };
-                script.onerror = reject;
-                document.head.appendChild(script);
-                setTimeout(() => {
-                    try {
-                        if (document.head.contains(script)) document.head.removeChild(script);
-                        delete window.__tempModule;
-                    } catch (e) {}
-                }, 200);
-            });
-        };
-        
-        // Load AppController
-        const appControllerModule = await loadModule('../src/core/AppController.js');
-        window.appController = appControllerModule.default || appControllerModule;
-        console.log('[Main] ✅ AppController loaded successfully');
-        
-        // Initialize
-        await window.appController.initialize();
-        console.log('[Main] ✅ Modular architecture initialized successfully');
-        
-    } catch (error) {
-        console.error('[Main] ❌ Failed to load modular architecture:');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('Error type:', error.constructor.name);
-        console.log('[Main] ⚠️ Continuing with legacy code only - application should still work');
-        
-        // Don't throw - let legacy code continue working
-        return false;
     }
 }
 
