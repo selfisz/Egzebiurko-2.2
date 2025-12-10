@@ -5,6 +5,8 @@
 import store from '../../store/index.js';
 import TrackerStore from './TrackerStore.js';
 
+const DEFAULT_DEADLINE_DAYS = 30;
+
 class TrackerView {
     constructor() {
         this.container = null;
@@ -349,13 +351,181 @@ class TrackerView {
     /**
      * Open case
      */
-    openCase(caseId) {
-        // This would open case detail modal/view
-        console.log('Opening case:', caseId);
-        store.commit('ADD_NOTIFICATION', {
-            type: 'info',
-            message: `Otwieranie sprawy #${caseId} - szczegóły do zaimplementowania`
+    openCase(caseId, editMode = false) {
+        try {
+            const cases = TrackerStore.getCases();
+            const caseData = cases.find(c => c.id === caseId);
+            if (!caseData) {
+                console.warn('[TrackerView] Case not found for id:', caseId);
+                return;
+            }
+
+            // Zapamiętaj aktualną sprawę (dla załączników, itd.)
+            this.currentCaseId = caseId;
+            window.currentCaseId = caseId;
+
+            // Wypełnij pola formularza
+            const noInput = document.getElementById('trNo');
+            const unpInput = document.getElementById('trUnp');
+            const debtorInput = document.getElementById('trDebtor');
+            const dateInput = document.getElementById('trDate');
+            const deadlineInput = document.getElementById('trDeadline');
+            const statusSelect = document.getElementById('trStatus');
+            const urgentCheckbox = document.getElementById('trUrgent');
+            const prioritySelect = document.getElementById('trPriority');
+            const noteInput = document.getElementById('trNote');
+
+            if (noInput) noInput.value = caseData.no || '';
+            if (unpInput) unpInput.value = caseData.unp || '';
+            if (debtorInput) debtorInput.value = caseData.debtor || '';
+            if (dateInput) dateInput.value = caseData.date || '';
+
+            if (deadlineInput) {
+                deadlineInput.value = caseData.deadline || '';
+                if (!deadlineInput.value && caseData.date) {
+                    this.updateDeadlineFromDate();
+                }
+            }
+
+            if (statusSelect) statusSelect.value = caseData.status || 'new';
+            if (urgentCheckbox) urgentCheckbox.checked = !!caseData.urgent;
+            if (prioritySelect) prioritySelect.value = caseData.priority || 'medium';
+            if (noteInput) noteInput.value = caseData.note || '';
+
+            // Ustaw tryb podglądu/edycji
+            this.setViewMode(editMode, caseData);
+
+            // Zaktualizuj label nagłówka
+            const labelEl = document.getElementById('tracker-case-label');
+            if (labelEl) {
+                labelEl.textContent = editMode
+                    ? `Edycja: ${caseData.no}`
+                    : `Podgląd: ${caseData.no}`;
+            }
+
+            // Przełącz widok grid -> szczegóły
+            const gridView = document.getElementById('tracker-grid-view');
+            const detailView = document.getElementById('tracker-detail-view');
+            if (gridView) gridView.classList.add('-translate-x-full');
+            if (detailView) detailView.classList.remove('translate-x-full');
+
+            // Załączniki (jeśli istnieje globalna funkcja)
+            if (typeof window.renderAttachments === 'function') {
+                window.renderAttachments(caseId);
+            }
+        } catch (error) {
+            console.error('[TrackerView] openCase error:', error);
+            store.commit('ADD_NOTIFICATION', {
+                type: 'error',
+                message: 'Błąd otwierania sprawy'
+            });
+        }
+    }
+
+    /**
+     * Update deadline based on date input (similar to legacy)
+     */
+    updateDeadlineFromDate() {
+        const dateInput = document.getElementById('trDate');
+        const deadlineInput = document.getElementById('trDeadline');
+        if (!dateInput || !deadlineInput || !dateInput.value) return;
+
+        const baseDate = new Date(dateInput.value);
+        if (Number.isNaN(baseDate.getTime())) return;
+
+        baseDate.setDate(baseDate.getDate() + DEFAULT_DEADLINE_DAYS);
+        deadlineInput.value = baseDate.toISOString().split('T')[0];
+    }
+
+    /**
+     * Set view mode (view vs edit) similar to legacy setViewMode
+     */
+    setViewMode(editMode, caseData) {
+        const fieldIds = ['trNo', 'trUnp', 'trDebtor', 'trDate', 'trDeadline', 'trStatus', 'trPriority', 'trUrgent', 'trNote'];
+        const saveBtn = document.getElementById('save-case-btn');
+        const editBtn = document.getElementById('edit-case-btn');
+
+        fieldIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = !editMode;
+            if (!editMode) {
+                el.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'cursor-not-allowed');
+            } else {
+                el.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'cursor-not-allowed');
+            }
         });
+
+        if (saveBtn) saveBtn.classList.toggle('hidden', !editMode);
+        if (editBtn) editBtn.classList.toggle('hidden', editMode);
+
+        // Tagi & input tagów – na razie tylko blokowanie w trybie podglądu
+        const tagInput = document.getElementById('trTagInput');
+        if (tagInput) tagInput.disabled = !editMode;
+
+        const tagButtons = document.querySelectorAll('#trTagsContainer button');
+        tagButtons.forEach(btn => {
+            btn.disabled = !editMode;
+            if (!editMode) {
+                btn.classList.add('cursor-not-allowed', 'opacity-60');
+            } else {
+                btn.classList.remove('cursor-not-allowed', 'opacity-60');
+            }
+        });
+    }
+
+    /**
+     * Add new case
+     */
+    addNewCase() {
+        try {
+            this.currentCaseId = null;
+            const isEditMode = true;
+
+            // Clear all fields
+            const noInput = document.getElementById('trNo');
+            const unpInput = document.getElementById('trUnp');
+            const debtorInput = document.getElementById('trDebtor');
+            const dateInput = document.getElementById('trDate');
+            const deadlineInput = document.getElementById('trDeadline');
+            const statusSelect = document.getElementById('trStatus');
+            const urgentCheckbox = document.getElementById('trUrgent');
+            const prioritySelect = document.getElementById('trPriority');
+            const noteInput = document.getElementById('trNote');
+
+            // Set default values
+            if (noInput) noInput.value = 'Nowa sprawa'; // User can change this
+            if (unpInput) unpInput.value = '';
+            if (debtorInput) debtorInput.value = '';
+            
+            const today = new Date().toISOString().split('T')[0];
+            if (dateInput) dateInput.value = today;
+            if (deadlineInput) {
+                this.updateDeadlineFromDate();
+            }
+            
+            if (statusSelect) statusSelect.value = 'new';
+            if (urgentCheckbox) urgentCheckbox.checked = false;
+            if (prioritySelect) prioritySelect.value = 'medium';
+            if (noteInput) noteInput.value = '';
+
+            // Set edit mode
+            this.setViewMode(isEditMode);
+
+            // Update label
+            const labelEl = document.getElementById('tracker-case-label');
+            if (labelEl) labelEl.textContent = 'Nowa Sprawa';
+
+            // Switch view
+            const gridView = document.getElementById('tracker-grid-view');
+            const detailView = document.getElementById('tracker-detail-view');
+            if (gridView) gridView.classList.add('-translate-x-full');
+            if (detailView) detailView.classList.remove('translate-x-full');
+
+            console.log('[TrackerView] New case form opened');
+        } catch (error) {
+            console.error('[TrackerView] addNewCase error:', error);
+        }
     }
 
     /**
@@ -365,6 +535,7 @@ class TrackerView {
         console.log('[TrackerView] Destroying...');
         this.container = null;
         this.trackerList = null;
+        this.currentCaseId = null;
     }
 }
 

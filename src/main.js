@@ -127,12 +127,16 @@ async function initApp() {
             };
         }
 
-        // Tracker: ALWAYS expose openCase for GlobalSearch, overriding legacy if needed.
+        // Tracker: ALWAYS expose openCase and addNewCase for GlobalSearch/UI buttons
         // This ensures ES6 GlobalSearch can open cases via ES6 TrackerView.
         window.trackerModule = window.trackerModule || {};
         window.trackerModule.openCase = (caseId) => {
             console.log('[Bridge] Opening case via ES6 TrackerView:', caseId);
             trackerModule.view.openCase(caseId);
+        };
+        window.trackerModule.addNewCase = () => {
+            console.log('[Bridge] Adding new case via ES6 TrackerView');
+            trackerModule.view.addNewCase();
         };
 
         // Cars: ALWAYS expose openCar for GlobalSearch, overriding legacy if needed.
