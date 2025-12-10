@@ -25,10 +25,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': '/src',
-      '@modules': '/src/modules',
-      '@utils': '/src/utils',
-      '@store': '/src/store'
+      '@': '/js',
+      '@modules': '/js/modules',
+      '@utils': '/js'
     }
   }
 });
