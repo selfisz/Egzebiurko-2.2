@@ -70,6 +70,8 @@ class Database {
      * Inicjalizacja bazy danych
      */
     async init() {
+        const startTime = performance.now();
+
         if (this.ready) return this.db;
 
         try {
@@ -116,6 +118,11 @@ class Database {
             this.ready = true;
             store.commit('SET_DB', this.db);
             console.log('[DB] Database initialized successfully');
+
+            const endTime = performance.now();
+            if (endTime - startTime > 3000) {
+                console.warn('[DB] Database initialization took longer than 3 seconds');
+            }
 
             return this.db;
         } catch (error) {
