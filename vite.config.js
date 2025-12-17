@@ -22,16 +22,23 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    headers: {
-      'Content-Type': 'text/css; charset=utf-8'
+    fs: {
+      strict: false
     }
+  },
+  publicDir: 'public',
+  optimizeDeps: {
+    exclude: ['js/**']
+  },
+  css: {
+    devSourcemap: true
   },
   resolve: {
     alias: {
-      '@': '/src',
-      '@modules': '/src/modules',
-      '@utils': '/src/utils',
-      '@store': '/src/store'
+      '@': '/js',
+      '@modules': '/js/modules',
+      '@utils': '/js',
+      '@store': '/js'
     }
   }
 });
