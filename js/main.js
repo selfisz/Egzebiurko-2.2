@@ -253,10 +253,44 @@ function toggleSearch() {
     }
 }
 
+// Teczka (Ulubione) - prosty toggler popovera
+function toggleFavorites() {
+    try {
+        const popover = document.getElementById('favPopover');
+        if (popover) {
+            popover.classList.toggle('hidden');
+        }
+    } catch (e) {
+        console.error('toggleFavorites error:', e);
+    }
+}
+
+// Powiadomienia - prosty toggler popovera i badge
+function toggleNotifications() {
+    try {
+        const popover = document.getElementById('notifPopover');
+        const badge = document.getElementById('notifBadge');
+
+        if (popover) {
+            const willBeVisible = popover.classList.contains('hidden');
+            popover.classList.toggle('hidden');
+
+            // Jeśli właśnie otwieramy panel, ukryj badge
+            if (willBeVisible && badge) {
+                badge.classList.add('hidden');
+            }
+        }
+    } catch (e) {
+        console.error('toggleNotifications error:', e);
+    }
+}
+
 // Export funkcji globalnych
 window.setTheme = setTheme;
 window.goHome = goHome;
 window.toggleSearch = toggleSearch;
+window.toggleFavorites = toggleFavorites;
+window.toggleNotifications = toggleNotifications;
 
 // Funkcja do odświeżania widgetów pulpitu (używana przez cars.js)
 function renderDashboardWidgets() {
