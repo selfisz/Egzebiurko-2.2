@@ -95,7 +95,7 @@ async function searchAllModules(query) {
 
     // 1. Szukaj w Tracker (sprawy)
     if (typeof trackerModule !== 'undefined') {
-        const cases = await state.db.getAll('cases');
+        const cases = await state.db.getAll('tracker');
         cases.forEach(c => {
             const searchText = `${c.no} ${c.debtor} ${c.unp} ${c.note}`.toLowerCase();
             if (searchText.includes(query)) {

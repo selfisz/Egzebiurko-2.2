@@ -16,8 +16,37 @@ function handleRouteChange() {
     if (typeof renderDashboardWidgets === 'function') renderDashboardWidgets();
 }
 
+// Prosty legacy router – przełączanie modułów przez loader.js i podświetlanie sidebaru
+function goToModule(moduleName) {
+    try {
+        const current = (window.location.hash || '').substring(1) || 'dashboard';
+
+        // Jeśli wywołanie pochodzi z kliknięcia w sidebar – ustaw hash i pozwól hashchange obsłużyć resztę
+        if (current !== moduleName) {
+            window.location.hash = `#${moduleName}`;
+            return;
+        }
+
+        // Gdy hash już jest poprawny (np. wywołanie z handleRouteChange) – załaduj widok
+        if (typeof loadView === 'function') {
+            loadView(moduleName);
+        }
+
+        // Podświetl aktywny przycisk w sidebarze
+        const navButtons = document.querySelectorAll('[id^="nav-"]');
+        navButtons.forEach(btn => btn.classList.remove('bg-white/10', 'text-white'));
+        const activeBtn = document.getElementById(`nav-${moduleName}`);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-white/10', 'text-white');
+        }
+    } catch (e) {
+        console.error('goToModule error:', e);
+    }
+}
+
 // Export to global scope for HTML onclick handlers
 window.handleRouteChange = handleRouteChange;
+window.goToModule = goToModule;
 
 // --- INITIALIZATION ---
 
@@ -175,8 +204,107 @@ if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-// Make sure global search is attached if not handled by bridge/onclicks (it is handled by onclicks mostly)
-window.runGlobalSearch = runGlobalSearch;
+// Adapter dla globalnej wyszukiwarki wywoływanej z HTML (oninput="runGlobalSearch(this.value)")
+window.runGlobalSearch = function(query) {
+    try {
+        if (window.globalSearchModule && typeof window.globalSearchModule.search === 'function') {
+            window.globalSearchModule.search(query || '');
+        }
+    } catch (e) {
+        console.error('runGlobalSearch error:', e);
+    }
+};
+
+// --- MISSING LEGACY FUNCTIONS ---
+
+// Prosty ustawiacz motywu (theme)
+function setTheme(themeName) {
+    try {
+        if (typeof CONFIG !== 'undefined' && CONFIG.THEME && CONFIG.THEME.DEFAULT_THEME_KEY) {
+            localStorage.setItem(CONFIG.THEME.DEFAULT_THEME_KEY, themeName);
+        } else {
+            localStorage.setItem('lex_theme', themeName);
+        }
+        console.log('[Theme] Set to:', themeName);
+    } catch (e) {
+        console.error('setTheme error:', e);
+    }
+}
+
+// Przejdź do pulpitu (dashboard)
+function goHome() {
+    try {
+        goToModule('dashboard');
+    } catch (e) {
+        console.error('goHome error:', e);
+    }
+}
+
+// Przełącznik wyszukiwania (global search modal)
+function toggleSearch() {
+    try {
+        if (window.globalSearchModule && typeof window.globalSearchModule.open === 'function') {
+            window.globalSearchModule.open();
+        } else {
+            console.warn('toggleSearch: globalSearchModule not available');
+        }
+    } catch (e) {
+        console.error('toggleSearch error:', e);
+    }
+}
+
+// Export funkcji globalnych
+window.setTheme = setTheme;
+window.goHome = goHome;
+window.toggleSearch = toggleSearch;
+
+// Funkcja do odświeżania widgetów pulpitu (używana przez cars.js)
+function renderDashboardWidgets() {
+    try {
+        // Placeholder - w legacy ta funkcja nie jest potrzebna
+        // Moduły odświeżają się automatycznie przy przełączaniu
+        console.log('[Dashboard] Widgets refresh requested');
+    } catch (e) {
+        console.error('renderDashboardWidgets error:', e);
+    }
+}
+
+// Export dla kompatybilności
+window.renderDashboardWidgets = renderDashboardWidgets;
+
+// Funkcja do przełączania trybu sidebaru (zwijanie/rozwijanie)
+function toggleSidebarMode() {
+    try {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('collapsed');
+            console.log('[Sidebar] Mode toggled');
+        }
+    } catch (e) {
+        console.error('toggleSidebarMode error:', e);
+    }
+}
+
+// Funkcja do otwierania pojazdu z globalnej wyszukiwarki
+function openCar(carId) {
+    try {
+        goToModule('cars');
+        setTimeout(() => {
+            // Spróbuj otworzyć pojazd przez carsModule
+            if (window.carsModule && typeof window.carsModule.openCar === 'function') {
+                window.carsModule.openCar(carId);
+            } else {
+                console.warn('openCar: carsModule not available');
+            }
+        }, 150);
+    } catch (e) {
+        console.error('openCar error:', e);
+    }
+}
+
+// Export funkcji globalnych
+window.toggleSidebarMode = toggleSidebarMode;
+window.openCar = openCar;
 
 // --- SIDEBAR EDIT MODE ---
 let sidebarSortable = null;

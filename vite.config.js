@@ -21,7 +21,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    headers: {
+      'Content-Type': 'text/css; charset=utf-8'
+    }
   },
   resolve: {
     alias: {
